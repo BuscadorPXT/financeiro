@@ -21,7 +21,7 @@ npm run build:backend
 
 ### Start Command:
 ```bash
-node dist/backend/server.js
+node dist/backend/backend/server.js
 ```
 
 ## 3️⃣ Adicionar Banco de Dados PostgreSQL
@@ -81,7 +81,7 @@ Se precisar rodar migrations no Railway:
 1. No Railway, vá em **"Settings" → "Service"**
 2. Em **"Custom Start Command"** adicione antes do start:
 ```bash
-npx prisma migrate deploy && node dist/backend/server.js
+npx prisma migrate deploy && node dist/backend/backend/server.js
 ```
 
 OU execute manualmente via CLI:
