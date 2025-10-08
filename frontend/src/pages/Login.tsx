@@ -38,7 +38,13 @@ const Login = () => {
       <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">FINANCASBUSCADOR</h1>
+          <div className="flex justify-center mb-4">
+            <img
+              src="/logo_branca_buscador_pxt_fundo_transparente.png"
+              alt="Buscador"
+              className="h-24 w-auto"
+            />
+          </div>
           <p className="text-gray-600 dark:text-gray-400 mt-2">Sistema de Controle Financeiro</p>
         </div>
 

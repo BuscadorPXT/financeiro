@@ -75,17 +75,31 @@ const Sidebar = () => {
         isCollapsed ? 'justify-center' : 'justify-between'
       )}>
         <AnimatePresence mode="wait">
-          {!isCollapsed && (
+          {!isCollapsed ? (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                FINANCAS
-              </h2>
-              <p className="text-xs text-gray-400">Buscador v1.0</p>
+              <img
+                src="/logo_branca_buscador_pxt_fundo_transparente.png"
+                alt="Buscador"
+                className="h-12 w-auto"
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <img
+                src="/logo_branca_buscador_pxt_fundo_transparente.png"
+                alt="Buscador"
+                className="h-8 w-auto"
+              />
             </motion.div>
           )}
         </AnimatePresence>

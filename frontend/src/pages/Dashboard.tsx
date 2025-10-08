@@ -167,14 +167,21 @@ const Dashboard = () => {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="flex flex-col lg:flex-row lg:items-center justify-between mb-10"
         >
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2 font-poppins">
-              Bem-vindo de volta ✨
-            </h1>
-            <button className="flex items-center text-[var(--text-secondary)] group transition-all duration-300 hover:text-gray-900 ">
-              <span className="text-base font-medium">Visão geral financeira</span>
-              <ChevronDown className="w-5 h-5 ml-2 group-hover:translate-y-1 transition-transform duration-300" />
-            </button>
+          <div className="flex items-center gap-6">
+            <img
+              src="/logo_branca_buscador_pxt_fundo_transparente.png"
+              alt="Buscador"
+              className="h-16 w-auto"
+            />
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2 font-poppins">
+                Bem-vindo de volta ✨
+              </h1>
+              <button className="flex items-center text-[var(--text-secondary)] group transition-all duration-300 hover:text-gray-900 ">
+                <span className="text-base font-medium">Visão geral financeira</span>
+                <ChevronDown className="w-5 h-5 ml-2 group-hover:translate-y-1 transition-transform duration-300" />
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4 mt-6 lg:mt-0">
