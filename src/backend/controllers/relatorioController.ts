@@ -46,7 +46,7 @@ class RelatorioController {
    * GET /api/relatorios/usuarios
    * Relatório de usuários
    */
-  getRelatorioUsuarios = catchAsync(async (req: Request, res: Response) => {
+  getRelatorioUsuarios = catchAsync(async (_req: Request, res: Response) => {
     const relatorio = await relatorioService.getRelatorioUsuarios();
 
     res.status(HTTP_STATUS.OK).json({
@@ -76,7 +76,7 @@ class RelatorioController {
    * GET /api/relatorios/agenda
    * Relatório de agenda e renovações
    */
-  getRelatorioAgenda = catchAsync(async (req: Request, res: Response) => {
+  getRelatorioAgenda = catchAsync(async (_req: Request, res: Response) => {
     const relatorio = await relatorioService.getRelatorioAgenda();
 
     res.status(HTTP_STATUS.OK).json({

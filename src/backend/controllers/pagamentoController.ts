@@ -65,7 +65,7 @@ class PagamentoController {
    * GET /api/pagamentos/relatorio/mensal
    * Obtém relatório mensal de pagamentos
    */
-  getRelatorioMensal = catchAsync(async (req: Request, res: Response) => {
+  getRelatorioMensal = catchAsync(async (_req: Request, res: Response) => {
     const relatorio = await pagamentoService.getRelatorioPorMes();
 
     res.status(HTTP_STATUS.OK).json({

@@ -60,7 +60,6 @@ class RelatorioService {
       taxaConversao: number;
     };
   }> {
-    const whereUsuario: any = {};
     const wherePagamento: any = {};
     const whereDespesa: any = {};
 
@@ -254,7 +253,7 @@ class RelatorioService {
   /**
    * Relatório financeiro detalhado
    */
-  async getRelatorioFinanceiro(filters?: {
+  async getRelatorioFinanceiro(_filters?: {
     mesInicio?: string;
     mesFim?: string;
     anoInicio?: number;

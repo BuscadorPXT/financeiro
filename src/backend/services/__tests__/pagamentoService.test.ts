@@ -1,7 +1,7 @@
 import pagamentoService from '../pagamentoService'
 import prisma from '@database/client'
 import usuarioService from '../usuarioService'
-import { RegraTipo, MetodoPagamento, ContaFinanceira, StatusFinal } from '../../../generated/prisma'
+import { RegraTipo, MetodoPagamento, StatusFinal } from '../../../generated/prisma'
 
 // Mock dependencies
 jest.mock('@database/client', () => ({
@@ -45,7 +45,7 @@ describe('PagamentoService', () => {
       dataPagto: new Date('2024-01-01'),
       valor: 100,
       metodo: MetodoPagamento.PIX,
-      conta: ContaFinanceira.PXT,
+      conta: 'PXT',
       regraTipo: RegraTipo.PRIMEIRO,
       regraValor: 30,
     }
@@ -136,7 +136,7 @@ describe('PagamentoService', () => {
   describe('findAll', () => {
     it('should return paginated payments with filters', async () => {
       const filters = {
-        conta: ContaFinanceira.PXT,
+        conta: 'PXT',
         metodo: MetodoPagamento.PIX,
       }
 
@@ -144,14 +144,14 @@ describe('PagamentoService', () => {
         {
           id: '1',
           valor: 100,
-          conta: ContaFinanceira.PXT,
+          conta: 'PXT',
           metodo: MetodoPagamento.PIX,
           usuario: { nomeCompleto: 'User 1' },
         },
         {
           id: '2',
           valor: 200,
-          conta: ContaFinanceira.PXT,
+          conta: 'PXT',
           metodo: MetodoPagamento.PIX,
           usuario: { nomeCompleto: 'User 2' },
         },

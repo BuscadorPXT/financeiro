@@ -2,7 +2,6 @@ import {
   PrismaClient,
   StatusFinal,
   MetodoPagamento,
-  ContaFinanceira,
 } from '../../generated/prisma';
 
 const prisma = new PrismaClient();
@@ -18,7 +17,7 @@ export async function seedUsuarios() {
       indicador: 'Direto',
       statusFinal: StatusFinal.ATIVO,
       metodo: MetodoPagamento.PIX,
-      conta: ContaFinanceira.PXT,
+      conta: 'PXT',
       obs: 'Cliente desde o início',
     },
     {
@@ -28,7 +27,7 @@ export async function seedUsuarios() {
       indicador: 'João Silva',
       statusFinal: StatusFinal.ATIVO,
       metodo: MetodoPagamento.CREDITO,
-      conta: ContaFinanceira.EAGLE,
+      conta: 'EAGLE',
       obs: 'Indicação de João Silva',
     },
     {
@@ -46,7 +45,7 @@ export async function seedUsuarios() {
       indicador: 'Maria Santos',
       statusFinal: StatusFinal.ATIVO,
       metodo: MetodoPagamento.PIX,
-      conta: ContaFinanceira.PXT,
+      conta: 'PXT',
     },
     {
       emailLogin: 'carlos.souza@example.com',
@@ -55,7 +54,7 @@ export async function seedUsuarios() {
       indicador: 'Direto',
       statusFinal: StatusFinal.EM_ATRASO,
       metodo: MetodoPagamento.DINHEIRO,
-      conta: ContaFinanceira.PXT,
+      conta: 'PXT',
       obs: 'Pagamento em atraso',
     },
   ];

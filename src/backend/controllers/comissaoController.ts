@@ -83,7 +83,7 @@ class ComissaoController {
    * GET /api/comissoes/relatorio/mensal
    * Obtém relatório mensal
    */
-  getRelatorioMensal = catchAsync(async (req: Request, res: Response) => {
+  getRelatorioMensal = catchAsync(async (_req: Request, res: Response) => {
     const relatorio = await comissaoService.getRelatorioPorMes();
 
     res.status(HTTP_STATUS.OK).json({

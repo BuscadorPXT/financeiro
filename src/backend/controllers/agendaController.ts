@@ -48,7 +48,7 @@ class AgendaController {
    * GET /api/agenda/stats
    * Obtém estatísticas da agenda
    */
-  getStats = catchAsync(async (req: Request, res: Response) => {
+  getStats = catchAsync(async (_req: Request, res: Response) => {
     const stats = await agendaService.getStats();
 
     res.status(HTTP_STATUS.OK).json({
@@ -196,7 +196,7 @@ class AgendaController {
    * PUT /api/agenda/atualizar-dias
    * Atualiza dias para vencer de todos os itens ativos
    */
-  atualizarDiasParaVencer = catchAsync(async (req: Request, res: Response) => {
+  atualizarDiasParaVencer = catchAsync(async (_req: Request, res: Response) => {
     const atualizados = await agendaService.atualizarDiasParaVencer();
 
     res.status(HTTP_STATUS.OK).json({

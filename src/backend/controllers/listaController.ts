@@ -9,7 +9,7 @@ class ListaController {
    * GET /api/listas
    * Lista todas as listas agrupadas por tipo
    */
-  getAll = catchAsync(async (req: Request, res: Response) => {
+  getAll = catchAsync(async (_req: Request, res: Response) => {
     const listas = await listaService.findAll();
 
     res.status(HTTP_STATUS.OK).json({

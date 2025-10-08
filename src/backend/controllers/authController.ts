@@ -20,7 +20,7 @@ class AuthController {
 
     const result = await authService.login(login, senha);
 
-    res.status(HTTP_STATUS.OK).json({
+    return res.status(HTTP_STATUS.OK).json({
       status: 'success',
       data: result,
       message: 'Login realizado com sucesso',
@@ -31,9 +31,9 @@ class AuthController {
    * POST /api/auth/logout
    * Invalida o token (opcional - pode ser feito apenas no frontend)
    */
-  logout = catchAsync(async (req: Request, res: Response) => {
+  logout = catchAsync(async (_req: Request, res: Response) => {
     // Implementar se necessário blacklist de tokens
-    res.status(HTTP_STATUS.OK).json({
+    return res.status(HTTP_STATUS.OK).json({
       status: 'success',
       message: 'Logout realizado com sucesso',
     });
@@ -55,7 +55,7 @@ class AuthController {
 
     const user = await authService.getMe(userId);
 
-    res.status(HTTP_STATUS.OK).json({
+    return res.status(HTTP_STATUS.OK).json({
       status: 'success',
       data: user,
     });
@@ -85,7 +85,7 @@ class AuthController {
 
     await authService.changePassword(userId, senhaAtual, senhaNova);
 
-    res.status(HTTP_STATUS.OK).json({
+    return res.status(HTTP_STATUS.OK).json({
       status: 'success',
       message: 'Senha alterada com sucesso',
     });

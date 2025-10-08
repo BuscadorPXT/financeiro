@@ -65,7 +65,7 @@ class ChurnController {
    * GET /api/churn/relatorio/mensal
    * Obtém relatório mensal de churn
    */
-  getRelatorioMensal = catchAsync(async (req: Request, res: Response) => {
+  getRelatorioMensal = catchAsync(async (_req: Request, res: Response) => {
     const relatorio = await churnService.getRelatorioPorMes();
 
     res.status(HTTP_STATUS.OK).json({
@@ -78,7 +78,7 @@ class ChurnController {
    * GET /api/churn/usuarios-em-churn
    * Obtém lista de usuários em churn ativo
    */
-  getUsuariosEmChurn = catchAsync(async (req: Request, res: Response) => {
+  getUsuariosEmChurn = catchAsync(async (_req: Request, res: Response) => {
     const usuarios = await churnService.getUsuariosEmChurn();
 
     res.status(HTTP_STATUS.OK).json({

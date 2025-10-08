@@ -84,7 +84,7 @@ class DespesaController {
    * GET /api/despesas/relatorio/mensal
    * Obtém relatório mensal
    */
-  getRelatorioMensal = catchAsync(async (req: Request, res: Response) => {
+  getRelatorioMensal = catchAsync(async (_req: Request, res: Response) => {
     const relatorio = await despesaService.getRelatorioPorMes();
 
     res.status(HTTP_STATUS.OK).json({

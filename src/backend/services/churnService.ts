@@ -1,5 +1,5 @@
 import prisma from '../../database/client';
-import { Churn, StatusFinal } from '../../generated/prisma';
+import { Churn } from '../../generated/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
@@ -318,7 +318,7 @@ class ChurnService {
       id: string;
       emailLogin: string;
       nomeCompleto: string;
-      telefone: string;
+      telefone: string | null;
       dataChurn: Date;
       motivo: string | null;
       diasDesdeChurn: number;

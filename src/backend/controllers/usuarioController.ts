@@ -47,7 +47,7 @@ class UsuarioController {
    * GET /api/usuarios/stats
    * Obtém estatísticas de usuários
    */
-  getStats = catchAsync(async (req: Request, res: Response) => {
+  getStats = catchAsync(async (_req: Request, res: Response) => {
     const stats = await usuarioService.getStats();
 
     res.status(HTTP_STATUS.OK).json({
@@ -78,7 +78,7 @@ class UsuarioController {
       obs,
     });
 
-    res.status(HTTP_STATUS.CREATED).json({
+    return res.status(HTTP_STATUS.CREATED).json({
       status: 'success',
       data: usuario,
       message: 'Usuário criado com sucesso',
@@ -155,7 +155,7 @@ class UsuarioController {
 
     const result = await usuarioService.importBulk(usuarios);
 
-    res.status(HTTP_STATUS.OK).json({
+    return res.status(HTTP_STATUS.OK).json({
       status: 'success',
       data: result,
       message: `Importação concluída: ${result.success} sucesso, ${result.skipped} ignorados, ${result.errors} erros`,
