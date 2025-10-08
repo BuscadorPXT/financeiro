@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+coverage
+*.lock
+.env
+.env.*
+*.log
+frontend/dist
+frontend/build

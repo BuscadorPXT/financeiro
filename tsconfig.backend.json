@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/backend",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/backend/**/*",
+    "src/database/**/*",
+    "src/shared/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "frontend",
+    "tests",
+    "src/frontend"
+  ]
+}

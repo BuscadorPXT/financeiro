@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum StatusFinal {
+  ATIVO
+  EM_ATRASO
+  INATIVO
+  HISTORICO
+}
+
+enum MetodoPagamento {
+  PIX
+  CREDITO
+  DINHEIRO
+}
+
+enum RegraTipo {
+  PRIMEIRO
+  RECORRENTE
+}
+
+enum StatusDespesa {
+  PAGO
+  PENDENTE
+}
+
+enum TipoLista {
+  CONTA
+  METODO
+  CATEGORIA
+  INDICADOR
+}
+
+enum AcaoAuditoria {
+  CREATE
+  UPDATE
+  DELETE
+  IMPORT
+}
+
+enum StatusAgenda {
+  ATIVO
+  INATIVO
+}
+
+// Model Usuario
+model Usuario {
+  id                    String         @id @default(uuid())
+  emailLogin            String         @unique @map("email_login")
+  nomeCompleto          String         @map("nome_completo")
+  telefone              String?
+  indicador             String?
+  statusFinal           StatusFinal    @default(INATIVO) @map("status_final")
+  metodo                MetodoPagamento?
+  conta                 String?
+  ciclo                 Int            @default(0)
+  totalCiclosUsuario    Int            @default(0) @map("total_ciclos_usuario")
+  dataPagto             DateTime?      @map("data_pagto")
+  mesPagto              String?        @map("mes_pagto")
+  diasAcesso            Int?           @map("dias_acesso")
+  dataVenc              DateTime?      @map("data_venc")
+  diasParaVencer        Int?           @map("dias_para_vencer")
+  venceHoje             Boolean        @default(false) @map("vence_hoje")
+  prox7Dias             Boolean        @default(false) @map("prox_7_dias")
+  emAtraso              Boolean        @default(false) @map("em_atraso")
+  obs                   String?
+  flagAgenda            Boolean        @default(false) @map("flag_agenda")
+  mesRef                String?        @map("mes_ref")
+  entrou                Boolean        @default(false)
+  renovou               Boolean        @default(false)
+  ativoAtual            Boolean        @default(false) @map("ativo_atual")
+  churn                 Boolean        @default(false)
+  regraTipo             RegraTipo?     @map("regra_tipo")
+  regraValor            Decimal?       @map("regra_valor")
+  elegivelComissao      Boolean        @default(false) @map("elegivel_comissao")
+  comissaoValor         Decimal?       @map("comissao_valor")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  pagamentos            Pagamento[]
+  agenda                Agenda[]
+  churnRegistros        Churn[]
+  prospeccaoConvertida  Prospeccao?
+
+  @@map("usuarios")
+}
+
+// Model Pagamento
+model Pagamento {
+  id               String            @id @default(uuid())
+  usuarioId        String            @map("usuario_id")
+  dataPagto        DateTime          @map("data_pagto")
+  mesPagto         String            @map("mes_pagto")
+  valor            Decimal
+  metodo           MetodoPagamento
+  conta            String
+  regraTipo        RegraTipo         @map("regra_tipo")
+  regraValor       Decimal?          @map("regra_valor")
+  elegivelComissao Boolean           @map("elegivel_comissao")
+  comissaoValor    Decimal?          @map("comissao_valor")
+  observacao       String?
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  usuario          Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  comissao         Comissao?
+
+  @@map("pagamentos")
+}
+
+// Model Despesa
+model Despesa {
+  id              String         @id @default(uuid())
+  categoria       String
+  descricao       String
+  conta           String?
+  indicador       String?
+  valor           Decimal
+  status          StatusDespesa  @default(PENDENTE)
+  competenciaMes  Int            @map("competencia_mes")
+  competenciaAno  Int            @map("competencia_ano")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@map("despesas")
+}
+
+// Model Agenda
+model Agenda {
+  id              String        @id @default(uuid())
+  usuarioId       String        @map("usuario_id")
+  dataVenc        DateTime      @map("data_venc")
+  diasParaVencer  Int           @map("dias_para_vencer")
+  status          StatusAgenda  @default(ATIVO)
+  ciclo           Int
+  renovou         Boolean       @default(false)
+  cancelou        Boolean       @default(false)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("agenda")
+}
+
+// Model Churn
+model Churn {
+  id          String    @id @default(uuid())
+  usuarioId   String    @map("usuario_id")
+  dataChurn   DateTime  @map("data_churn")
+  motivo      String?
+  revertido   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("churn")
+}
+
+// Model Comissao
+model Comissao {
+  id           String      @id @default(uuid())
+  pagamentoId  String      @unique @map("pagamento_id")
+  indicador    String
+  regraTipo    RegraTipo   @map("regra_tipo")
+  valor        Decimal
+  mesRef       String      @map("mes_ref")
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  pagamento    Pagamento   @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
+
+  @@map("comissoes")
+}
+
+// Model Prospeccao (Lead)
+model Prospeccao {
+  id          String    @id @default(uuid())
+  email       String
+  nome        String
+  telefone    String?
+  origem      String?
+  indicador   String?
+  convertido  Boolean   @default(false)
+  usuarioId   String?   @unique @map("usuario_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  usuario     Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@map("prospeccao")
+}
+
+// Model ListaAuxiliar
+model ListaAuxiliar {
+  id        String     @id @default(uuid())
+  tipo      TipoLista
+  valor     String
+  ativo     Boolean    @default(true)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@unique([tipo, valor])
+  @@map("listas_auxiliares")
+}
+
+// Model Auditoria
+model Auditoria {
+  id          String         @id @default(uuid())
+  tabela      String
+  registroId  String         @map("registro_id")
+  acao        AcaoAuditoria
+  usuario     String?
+  dadosAntes  String?        @map("dados_antes")  // JSON string
+  dadosDepois String?        @map("dados_depois") // JSON string
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@map("auditoria")
+}
+
+// Model Admin (usuários do sistema de autenticação)
+model Admin {
+  id          String    @id @default(uuid())
+  login       String    @unique
+  senha       String    // Hash bcrypt
+  nome        String
+  ativo       Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("admins")
+}

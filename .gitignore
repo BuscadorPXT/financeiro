@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+package-lock.json
+frontend/package-lock.json
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+frontend/build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.claude/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Prisma
+prisma/migrations/*.sql
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Misc
+.cache/
+temp/
+tmp/
+
+/src/generated/prisma
