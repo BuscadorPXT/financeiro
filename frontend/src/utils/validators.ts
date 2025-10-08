@@ -92,17 +92,17 @@ export const validate = (
   for (const ruleOrConfig of rules) {
     if (typeof ruleOrConfig === 'string') {
       const validator = validators[ruleOrConfig];
-      if (validator && !validator(value)) {
-        return errorMessages[ruleOrConfig] || 'Valor inválido';
+      if (validator && !(validator as any)(value)) {
+        return (errorMessages[ruleOrConfig] as string) || 'Valor inválido';
       }
     } else {
       const { rule, params = [] } = ruleOrConfig;
       const validator = validators[rule];
-      if (validator && !validator(value, ...params)) {
+      if (validator && !(validator as any)(value, ...(params as any[]))) {
         const errorMessage = errorMessages[rule];
         return typeof errorMessage === 'function'
-          ? errorMessage(...params)
-          : errorMessage || 'Valor inválido';
+          ? (errorMessage as any)(...(params as any[]))
+          : (errorMessage as string) || 'Valor inválido';
       }
     }
   }

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useDespesas } from '../hooks/useDespesas';
-import type { Despesa } from '../services/despesaService';
+import type { Despesa, CreateDespesaDTO, UpdateDespesaDTO } from '../services/despesaService';
 import FilterBar from '../components/common/FilterBar';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
@@ -205,9 +205,9 @@ const DespesasPage: React.FC = () => {
           }}
           onSave={async (data) => {
             if (selectedDespesa) {
-              await update(selectedDespesa.id, data);
+              await update(selectedDespesa.id, data as UpdateDespesaDTO);
             } else {
-              await create(data);
+              await create(data as CreateDespesaDTO);
             }
             setShowForm(false);
             setSelectedDespesa(null);

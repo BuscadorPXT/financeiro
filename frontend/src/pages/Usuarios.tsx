@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useUsuarios } from '../hooks/useUsuarios';
-import type { Usuario } from '../services/usuarioService';
+import type { Usuario, CreateUsuarioDTO, UpdateUsuarioDTO } from '../services/usuarioService';
 import FilterBar from '../components/common/FilterBar';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
@@ -258,9 +258,9 @@ const UsuariosPage: React.FC = () => {
           }}
           onSave={async (data) => {
             if (selectedUsuario) {
-              await update(selectedUsuario.id, data);
+              await update(selectedUsuario.id, data as UpdateUsuarioDTO);
             } else {
-              await create(data);
+              await create(data as CreateUsuarioDTO);
             }
             setShowForm(false);
             setSelectedUsuario(null);

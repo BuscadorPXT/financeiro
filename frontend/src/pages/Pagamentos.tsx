@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePagamentos } from '../hooks/usePagamentos';
 import { useUsuarios } from '../hooks/useUsuarios';
-import type { Pagamento } from '../services/pagamentoService';
+import type { Pagamento, CreatePagamentoDTO, UpdatePagamentoDTO } from '../services/pagamentoService';
 import FilterBar from '../components/common/FilterBar';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
@@ -199,9 +199,9 @@ const PagamentosPage: React.FC = () => {
           }}
           onSave={async (data) => {
             if (selectedPagamento) {
-              await update(selectedPagamento.id, data);
+              await update(selectedPagamento.id, data as UpdatePagamentoDTO);
             } else {
-              await create(data);
+              await create(data as CreatePagamentoDTO);
             }
             setShowForm(false);
             setSelectedPagamento(null);
