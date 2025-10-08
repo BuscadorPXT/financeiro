@@ -14,7 +14,7 @@
     "build:backend": "tsc -p tsconfig.backend.json",
     "build:frontend": "cd frontend && npm run build",
     "build": "npm run build:backend && npm run build:frontend",
-    "start": "node dist/backend/backend/server.js",
+    "start": "node dist/backend/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node src/database/seeds/index.ts",

@@ -8,7 +8,7 @@
   - [x] `railway.json` (configuração automática)
   - [x] `.env.example` (referência de variáveis)
   - [x] `RAILWAY_DEPLOY.md` (guia detalhado)
-- [x] Start command corrigido: `node dist/backend/backend/server.js`
+- [x] Start command corrigido: `node dist/backend/server.js`
 
 ---
 
