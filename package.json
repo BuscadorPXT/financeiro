@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "postinstall": "cd frontend && npm install",
+    "postinstall": "prisma generate && cd frontend && npm install",
     "dev:backend": "ts-node-dev --respawn --transpile-only src/backend/server.ts",
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
