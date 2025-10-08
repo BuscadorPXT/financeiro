@@ -7,7 +7,6 @@ import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import FormInput from '../components/common/FormInput';
 import Alert from '../components/common/Alert';
-import StatusBadge from '../components/common/StatusBadge';
 import Badge from '../components/common/Badge';
 import listaService from '../services/listaService';
 import type { Lista, CreateListaData } from '../services/listaService';

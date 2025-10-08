@@ -35,7 +35,7 @@ export const useChurn = () => {
     }
   }, []);
 
-  const update = useCallback(async (id: number, data: UpdateChurnDTO) => {
+  const update = useCallback(async (id: string, data: UpdateChurnDTO) => {
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +50,7 @@ export const useChurn = () => {
     }
   }, []);
 
-  const remove = useCallback(async (id: number) => {
+  const remove = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -64,7 +64,7 @@ export const useChurn = () => {
     }
   }, []);
 
-  const reverter = useCallback(async (id: number) => {
+  const reverter = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
     try {

@@ -45,8 +45,8 @@ const RelatorioPorIndicador: React.FC<RelatorioPorIndicadorProps> = ({
     // Agrupar comissões por indicador (com filtros)
     comissoes
       .filter((c) => {
-        // mes_ref está no formato "YYYY-MM"
-        const [ano, mes] = c.mes_ref.split('-');
+        // mesRef está no formato "YYYY-MM"
+        const [ano, mes] = c.mesRef.split('-');
         const matchMes = filtroMes === '' || mes === filtroMes.padStart(2, '0');
         const matchAno = filtroAno === '' || ano === filtroAno;
         return matchMes && matchAno;
@@ -64,7 +64,7 @@ const RelatorioPorIndicador: React.FC<RelatorioPorIndicadorProps> = ({
 
         grouped[c.indicador].totalComissoes += c.valor;
 
-        if (c.regra_tipo === 'PRIMEIRO') {
+        if (c.regraTipo === 'PRIMEIRO') {
           grouped[c.indicador].comissoesPrimeiro += c.valor;
         } else {
           grouped[c.indicador].comissoesRecorrente += c.valor;

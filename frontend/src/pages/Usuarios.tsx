@@ -159,7 +159,7 @@ const UsuariosPage: React.FC = () => {
         </div>
       </div>
 
-      {error && <Alert type="error" message={error} className="mb-4" />}
+      {error && <Alert type="error" className="mb-4">{error}</Alert>}
 
       <FilterBar onClear={handleClearFilters}>
         <SearchInput
@@ -234,7 +234,7 @@ const UsuariosPage: React.FC = () => {
           usuarios={filteredUsuarios}
           onEdit={handleEditUsuario}
           onDelete={async (usuario) => {
-            if (confirm(`Deseja realmente excluir o usuário ${usuario.nome_completo}?`)) {
+            if (confirm(`Deseja realmente excluir o usuário ${usuario.nomeCompleto}?`)) {
               await remove(usuario.id);
               fetchAll();
             }

@@ -7,7 +7,7 @@ import Alert from '../common/Alert';
 
 interface ConversaoModalProps {
   prospeccao: Prospeccao;
-  onConfirm: (usuarioId: number) => void;
+  onConfirm: (usuarioId: string) => void;
   onClose: () => void;
 }
 
@@ -17,13 +17,13 @@ const ConversaoModal: React.FC<ConversaoModalProps> = ({
   onClose,
 }) => {
   const { usuarios, loading } = useUsuarios();
-  const [selectedUsuarioId, setSelectedUsuarioId] = useState<number | null>(null);
+  const [selectedUsuarioId, setSelectedUsuarioId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Pré-selecionar usuário se houver match por email
   useEffect(() => {
     const matchedUsuario = usuarios.find(
-      (u) => u.email_login.toLowerCase() === prospeccao.email.toLowerCase()
+      (u) => u.emailLogin.toLowerCase() === prospeccao.email.toLowerCase()
     );
     if (matchedUsuario) {
       setSelectedUsuarioId(matchedUsuario.id);
@@ -32,8 +32,8 @@ const ConversaoModal: React.FC<ConversaoModalProps> = ({
 
   const filteredUsuarios = usuarios.filter(
     (u) =>
-      u.email_login.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.nome_completo.toLowerCase().includes(searchTerm.toLowerCase())
+      u.emailLogin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.nomeCompleto.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleConfirm = () => {
@@ -80,10 +80,9 @@ const ConversaoModal: React.FC<ConversaoModalProps> = ({
           </div>
         </div>
 
-        <Alert
-          type="info"
-          message="Selecione o usuário para associar este lead. Se já existe um usuário com o mesmo email, ele será pré-selecionado."
-        />
+        <Alert type="info">
+          Selecione o usuário para associar este lead. Se já existe um usuário com o mesmo email, ele será pré-selecionado.
+        </Alert>
 
         {/* Busca de Usuário */}
         <div>
@@ -126,9 +125,9 @@ const ConversaoModal: React.FC<ConversaoModalProps> = ({
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-[var(--text-primary)]">
-                          {usuario.nome_completo}
+                          {usuario.nomeCompleto}
                         </p>
-                        <p className="text-sm text-[var(--text-secondary)]">{usuario.email_login}</p>
+                        <p className="text-sm text-[var(--text-secondary)]">{usuario.emailLogin}</p>
                         {usuario.telefone && (
                           <p className="text-xs text-[var(--text-secondary)]">{usuario.telefone}</p>
                         )}
@@ -164,10 +163,10 @@ const ConversaoModal: React.FC<ConversaoModalProps> = ({
             </h3>
             <div className="text-sm text-green-800">
               <p>
-                <span className="font-medium">Nome:</span> {selectedUsuario.nome_completo}
+                <span className="font-medium">Nome:</span> {selectedUsuario.nomeCompleto}
               </p>
               <p>
-                <span className="font-medium">Email:</span> {selectedUsuario.email_login}
+                <span className="font-medium">Email:</span> {selectedUsuario.emailLogin}
               </p>
             </div>
           </div>

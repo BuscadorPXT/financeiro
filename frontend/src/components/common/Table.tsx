@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 

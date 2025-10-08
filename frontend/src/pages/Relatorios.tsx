@@ -8,7 +8,6 @@ import { useComissoes } from '../hooks/useComissoes';
 import FilterBar from '../components/common/FilterBar';
 import ExportButton from '../components/common/ExportButton';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import Alert from '../components/common/Alert';
 import DashboardCards from '../components/relatorios/DashboardCards';
 import RelatorioPorMes from '../components/relatorios/RelatorioPorMes';
 import RelatorioPorIndicador from '../components/relatorios/RelatorioPorIndicador';
@@ -46,7 +45,7 @@ const RelatoriosPage: React.FC = () => {
     const anos = new Set<string>();
 
     pagamentos.forEach((p) => {
-      const ano = new Date(p.data_pagto).getFullYear().toString();
+      const ano = new Date(p.dataPagto).getFullYear().toString();
       anos.add(ano);
     });
 
@@ -73,7 +72,7 @@ const RelatoriosPage: React.FC = () => {
 
     const receitaMes = pagamentos
       .filter((p) => {
-        const data = new Date(p.data_pagto);
+        const data = new Date(p.dataPagto);
         return data.getMonth() + 1 === mesAtual && data.getFullYear() === anoAtual;
       })
       .reduce((sum, p) => sum + p.valor, 0);

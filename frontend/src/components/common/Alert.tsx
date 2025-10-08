@@ -1,13 +1,14 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface AlertProps {
   type?: 'success' | 'error' | 'warning' | 'info';
   title?: string;
   children: ReactNode;
   onClose?: () => void;
+  className?: string;
 }
 
-const Alert = ({ type = 'info', title, children, onClose }: AlertProps) => {
+const Alert = ({ type = 'info', title, children, onClose, className = '' }: AlertProps) => {
   const variants = {
     success: {
       bg: 'bg-green-50',
@@ -39,7 +40,7 @@ const Alert = ({ type = 'info', title, children, onClose }: AlertProps) => {
 
   return (
     <div
-      className={`${variant.bg} ${variant.border} ${variant.text} border rounded-lg p-4`}
+      className={`${variant.bg} ${variant.border} ${variant.text} border rounded-lg p-4 ${className}`}
     >
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0 text-xl">{variant.icon}</div>

@@ -13,8 +13,8 @@ export const xlsxExporter = {
    * Implementação futura com biblioteca 'xlsx' (SheetJS)
    */
   export: async (
-    data: any[],
-    options: XLSXExportOptions
+    _data: any[],
+    _options: XLSXExportOptions
   ): Promise<void> => {
     console.warn('Exportação XLSX será implementada na Fase 7 com a biblioteca xlsx');
 

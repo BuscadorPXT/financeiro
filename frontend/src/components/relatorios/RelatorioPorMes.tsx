@@ -90,7 +90,7 @@ const RelatorioPorMes: React.FC<RelatorioPorMesProps> = ({
 
       // Evasões
       const evasoesMes = churn.filter((c) => {
-        const data = new Date(c.data_churn);
+        const data = new Date(c.dataChurn);
         return (
           data.getMonth() + 1 === mes && data.getFullYear() === ano && !c.revertido
         );

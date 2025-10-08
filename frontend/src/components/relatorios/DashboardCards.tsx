@@ -72,7 +72,7 @@ const DashboardCards: React.FC<DashboardCardsProps> = ({
 
     // Evasões do mês
     const evasoesMes = churn.filter((c) => {
-      const data = new Date(c.data_churn);
+      const data = new Date(c.dataChurn);
       return (
         data.getMonth() + 1 === mesAtual &&
         data.getFullYear() === anoAtual &&

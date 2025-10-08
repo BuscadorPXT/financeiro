@@ -121,9 +121,9 @@ const ProspeccaoPage: React.FC = () => {
     setShowConversaoModal(true);
   };
 
-  const handleConfirmConversao = async (usuarioId: number) => {
+  const handleConfirmConversao = async (usuarioId: string) => {
     if (convertingProspeccao) {
-      await converter(convertingProspeccao.id, { usuario_id: usuarioId });
+      await converter(convertingProspeccao.id, { usuario_id: parseInt(usuarioId) });
       setShowConversaoModal(false);
       setConvertingProspeccao(null);
       fetchAll();
@@ -166,7 +166,7 @@ const ProspeccaoPage: React.FC = () => {
         </div>
       </div>
 
-      {error && <Alert type="error" message={error} className="mb-4" />}
+      {error && <Alert type="error" className="mb-4">{error}</Alert>}
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

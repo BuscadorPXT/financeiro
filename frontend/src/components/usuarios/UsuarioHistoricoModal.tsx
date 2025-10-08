@@ -44,26 +44,26 @@ const UsuarioHistoricoModal: React.FC<UsuarioHistoricoModalProps> = ({
     <Modal
       isOpen={true}
       onClose={onClose}
-      title={`Histórico - ${usuario.nome_completo}`}
+      title={`Histórico - ${usuario.nomeCompleto}`}
       size="xl"
     >
       {/* Resumo do Usuário */}
       <div className="mb-6 p-4 bg-[var(--bg-secondary)] rounded-lg grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
           <p className="text-xs text-[var(--text-secondary)] uppercase">Email</p>
-          <p className="text-sm font-medium text-[var(--text-primary)]">{usuario.email_login}</p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">{usuario.emailLogin}</p>
         </div>
         <div>
           <p className="text-xs text-[var(--text-secondary)] uppercase">Status</p>
           <StatusBadge
-            status={usuario.status_final}
+            status={usuario.statusFinal}
             variant={
-              usuario.status_final === 'Ativo'
+              usuario.statusFinal === 'ATIVO'
                 ? 'success'
-                : usuario.status_final === 'Em_Atraso'
+                : usuario.statusFinal === 'EM_ATRASO'
                 ? 'warning'
-                : usuario.status_final === 'Inativo'
-                ? 'error'
+                : usuario.statusFinal === 'INATIVO'
+                ? 'danger'
                 : 'default'
             }
           />
@@ -74,7 +74,7 @@ const UsuarioHistoricoModal: React.FC<UsuarioHistoricoModalProps> = ({
         </div>
         <div>
           <p className="text-xs text-[var(--text-secondary)] uppercase">Total de Ciclos</p>
-          <p className="text-sm font-medium text-[var(--text-primary)]">{usuario.total_ciclos_usuario}</p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">{usuario.totalCiclosUsuario}</p>
         </div>
         <div>
           <p className="text-xs text-[var(--text-secondary)] uppercase">Indicador</p>
@@ -83,21 +83,21 @@ const UsuarioHistoricoModal: React.FC<UsuarioHistoricoModalProps> = ({
         <div>
           <p className="text-xs text-[var(--text-secondary)] uppercase">Vencimento</p>
           <p className="text-sm font-medium text-[var(--text-primary)]">
-            {usuario.data_venc ? formatDate(usuario.data_venc) : '-'}
+            {usuario.dataVenc ? formatDate(usuario.dataVenc) : '-'}
           </p>
         </div>
         <div>
           <p className="text-xs text-[var(--text-secondary)] uppercase">Dias p/ Vencer</p>
           <p
             className={`text-sm font-medium ${
-              (usuario.dias_para_vencer || 0) < 0
+              (usuario.diasParaVencer || 0) < 0
                 ? 'text-red-600'
-                : (usuario.dias_para_vencer || 0) <= 7
+                : (usuario.diasParaVencer || 0) <= 7
                 ? 'text-yellow-600'
                 : 'text-green-600'
             }`}
           >
-            {usuario.dias_para_vencer !== null ? `${usuario.dias_para_vencer} dias` : '-'}
+            {usuario.diasParaVencer !== null ? `${usuario.diasParaVencer} dias` : '-'}
           </p>
         </div>
         <div>
@@ -154,7 +154,7 @@ const UsuarioHistoricoModal: React.FC<UsuarioHistoricoModalProps> = ({
                 {pagamentos.map((pagamento) => (
                   <tr key={pagamento.id} className="hover:bg-[var(--bg-secondary)]">
                     <td className="px-4 py-3 text-sm text-[var(--text-primary)]">
-                      {formatDate(pagamento.data_pagto)}
+                      {formatDate(pagamento.dataPagto)}
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-green-600">
                       {formatCurrency(pagamento.valor)}
@@ -164,17 +164,17 @@ const UsuarioHistoricoModal: React.FC<UsuarioHistoricoModalProps> = ({
                     <td className="px-4 py-3 text-sm">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          pagamento.regra_tipo === 'PRIMEIRO'
+                          pagamento.regraTipo === 'PRIMEIRO'
                             ? 'bg-blue-100 text-blue-800'
                             : 'bg-purple-100 text-purple-800'
                         }`}
                       >
-                        {pagamento.regra_tipo}
+                        {pagamento.regraTipo}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-[var(--text-primary)]">
-                      {pagamento.elegivel_comissao
-                        ? formatCurrency(pagamento.comissao_valor)
+                      {pagamento.elegivelComissao
+                        ? formatCurrency(pagamento.comissaoValor)
                         : '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">

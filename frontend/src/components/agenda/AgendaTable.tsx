@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { Agenda } from '../../services/agendaService';
 import type { Usuario } from '../../services/usuarioService';
 import Button from '../common/Button';
-import Checkbox from '../common/Checkbox';
 import { formatDate } from '../../utils/formatters';
 import { usePagination } from '../../hooks/usePagination';
 

@@ -37,7 +37,7 @@ const churnService = {
     return response.data.data;
   },
 
-  getById: async (id: number): Promise<Churn> => {
+  getById: async (id: string): Promise<Churn> => {
     const response = await api.get(`/churn/${id}`);
     return response.data.data;
   },
@@ -47,16 +47,16 @@ const churnService = {
     return response.data.data;
   },
 
-  update: async (id: number, data: UpdateChurnDTO): Promise<Churn> => {
+  update: async (id: string, data: UpdateChurnDTO): Promise<Churn> => {
     const response = await api.put(`/churn/${id}`, data);
     return response.data.data;
   },
 
-  delete: async (id: number): Promise<void> => {
+  delete: async (id: string): Promise<void> => {
     await api.delete(`/churn/${id}`);
   },
 
-  reverter: async (id: number): Promise<Churn> => {
+  reverter: async (id: string): Promise<Churn> => {
     const response = await api.patch(`/churn/${id}/reverter`);
     return response.data.data;
   },

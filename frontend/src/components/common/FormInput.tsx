@@ -1,4 +1,5 @@
-import { InputHTMLAttributes, forwardRef, ReactNode, useState } from 'react';
+import { forwardRef, useState } from 'react';
+import type { InputHTMLAttributes, ReactNode } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 

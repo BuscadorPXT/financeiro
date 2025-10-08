@@ -18,7 +18,7 @@ const DespesasTable: React.FC<DespesasTableProps> = ({
   onDelete,
   onQuitar,
 }) => {
-  const [sortKey, setSortKey] = useState<keyof Despesa>('created_at');
+  const [sortKey, setSortKey] = useState<keyof Despesa>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Ordenação
@@ -107,10 +107,10 @@ const DespesasTable: React.FC<DespesasTableProps> = ({
                 Status {sortKey === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th
-                onClick={() => handleSort('competencia_mes')}
+                onClick={() => handleSort('competenciaMes')}
                 className="px-4 py-3 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-tertiary)]"
               >
-                Competência {sortKey === 'competencia_mes' && (sortOrder === 'asc' ? '↑' : '↓')}
+                Competência {sortKey === 'competenciaMes' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
                 Ações

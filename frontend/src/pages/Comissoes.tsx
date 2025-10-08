@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { useComissoes } from '../hooks/useComissoes';
 import { useListas } from '../hooks/useListas';
 import FilterBar from '../components/common/FilterBar';
-import Button from '../components/common/Button';
 import ExportButton from '../components/common/ExportButton';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Alert from '../components/common/Alert';
@@ -125,7 +124,7 @@ const ComissoesPage: React.FC = () => {
         </div>
       </div>
 
-      {error && <Alert type="error" message={error} className="mb-4" />}
+      {error && <Alert type="error" className="mb-4">{error}</Alert>}
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

@@ -133,7 +133,7 @@ const AgendaPage: React.FC = () => {
         </div>
       </div>
 
-      {error && <Alert type="error" message={error} className="mb-4" />}
+      {error && <Alert type="error" className="mb-4">{error}</Alert>}
 
       {/* Dashboard de Resumo */}
       <DashboardAgenda agenda={agenda} />

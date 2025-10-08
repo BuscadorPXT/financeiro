@@ -4,7 +4,7 @@ import Modal from '../common/Modal';
 import FormInput from '../common/FormInput';
 import Select from '../common/Select';
 import Button from '../common/Button';
-import { validators, validate } from '../../utils/validators';
+import { validate } from '../../utils/validators';
 import { useListas } from '../../hooks/useListas';
 
 interface UsuarioFormProps {

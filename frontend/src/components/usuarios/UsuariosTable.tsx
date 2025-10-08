@@ -54,7 +54,6 @@ const UsuariosTable: React.FC<UsuariosTableProps> = ({
     paginatedData,
     currentPage,
     totalPages,
-    goToPage,
     nextPage,
     previousPage,
     itemsPerPage,
@@ -70,14 +69,14 @@ const UsuariosTable: React.FC<UsuariosTableProps> = ({
     }
   };
 
-  const getStatusColor = (status: string): 'success' | 'warning' | 'error' | 'default' => {
+  const getStatusColor = (status: string): 'success' | 'warning' | 'danger' | 'default' => {
     switch (status) {
       case 'ATIVO':
         return 'success';
       case 'EM_ATRASO':
         return 'warning';
       case 'INATIVO':
-        return 'error';
+        return 'danger';
       default:
         return 'default';
     }

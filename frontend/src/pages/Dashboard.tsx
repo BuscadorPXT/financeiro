@@ -14,8 +14,7 @@ import {
   Users,
   ArrowRight,
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { api } from '../services/api';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import relatorioService from '../services/relatorioService';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import clsx from 'clsx';
@@ -86,7 +85,6 @@ const Dashboard = () => {
   // Calcular dados reais para o gráfico
   const chartData = useMemo(() => {
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const currentYear = selectedYear || new Date().getFullYear();
     const data = [];
 
     // Últimos 6 meses
