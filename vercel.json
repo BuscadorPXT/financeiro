@@ -1,9 +1,9 @@
 {
   "version": 2,
   "name": "financasbuscador",
-  "buildCommand": "npm run build",
+  "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install",
+  "installCommand": "cd frontend && npm install",
   "framework": null,
   "routes": [
     {
