@@ -1,6 +1,6 @@
 import usuarioService from '../usuarioService'
 import prisma from '@database/client'
-import { StatusFinal } from '../../../generated/prisma'
+import { StatusFinal } from '@prisma/client'
 
 // Mock Prisma
 jest.mock('@database/client', () => ({

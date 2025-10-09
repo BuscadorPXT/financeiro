@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import comissaoService from '../services/comissaoService';
 import { catchAsync } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
-import { RegraTipo } from '../../generated/prisma';
+import { RegraTipo } from '@prisma/client';
 
 class ComissaoController {
   /**

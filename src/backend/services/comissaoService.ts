@@ -1,5 +1,5 @@
 import prisma from '../../database/client';
-import { Comissao, RegraTipo } from '../../generated/prisma';
+import { Comissao, RegraTipo } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';

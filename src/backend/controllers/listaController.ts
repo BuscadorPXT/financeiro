@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import listaService from '../services/listaService';
 import { catchAsync } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
-import { TipoLista } from '../../generated/prisma';
+import { TipoLista } from '@prisma/client';
 
 class ListaController {
   /**

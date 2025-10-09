@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import despesaService from '../services/despesaService';
 import { catchAsync } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
-import { StatusDespesa } from '../../generated/prisma';
+import { StatusDespesa } from '@prisma/client';
 
 class DespesaController {
   /**

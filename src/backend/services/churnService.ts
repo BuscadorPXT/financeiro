@@ -1,5 +1,5 @@
 import prisma from '../../database/client';
-import { Churn } from '../../generated/prisma';
+import { Churn } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';

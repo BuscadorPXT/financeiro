@@ -1,7 +1,7 @@
 import pagamentoService from '../pagamentoService'
 import prisma from '@database/client'
 import usuarioService from '../usuarioService'
-import { RegraTipo, MetodoPagamento, StatusFinal } from '../../../generated/prisma'
+import { RegraTipo, MetodoPagamento, StatusFinal } from '@prisma/client'
 
 // Mock dependencies
 jest.mock('@database/client', () => ({

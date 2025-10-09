@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import agendaService from '../services/agendaService';
 import { catchAsync } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
-import { StatusAgenda, MetodoPagamento } from '../../generated/prisma';
+import { StatusAgenda, MetodoPagamento } from '@prisma/client';
 
 class AgendaController {
   /**

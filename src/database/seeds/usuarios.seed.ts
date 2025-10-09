@@ -2,7 +2,7 @@ import {
   PrismaClient,
   StatusFinal,
   MetodoPagamento,
-} from '../../generated/prisma';
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 

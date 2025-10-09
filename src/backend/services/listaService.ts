@@ -1,5 +1,5 @@
 import prisma from '../../database/client';
-import { TipoLista, ListaAuxiliar } from '../../generated/prisma';
+import { TipoLista, ListaAuxiliar } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
 

@@ -1,5 +1,5 @@
 import prisma from '../../database/client';
-import { Usuario, StatusFinal } from '../../generated/prisma';
+import { Usuario, StatusFinal } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
 import { isValidEmail, formatPhone } from '../utils/validators';

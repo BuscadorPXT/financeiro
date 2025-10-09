@@ -1,5 +1,5 @@
 import prisma from '../../database/client';
-import { Auditoria, AcaoAuditoria } from '../../generated/prisma';
+import { Auditoria, AcaoAuditoria } from '@prisma/client';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
 
 class AuditoriaService {

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import auditoriaService from '../services/auditoriaService';
-import { AcaoAuditoria } from '../../generated/prisma';
+import { AcaoAuditoria } from '@prisma/client';
 
 /**
  * Middleware para registrar ações de auditoria

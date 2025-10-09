@@ -1,4 +1,4 @@
-import { RegraTipo } from '../../generated/prisma';
+import { RegraTipo } from '@prisma/client';
 
 /**
  * Calcula o valor da comissão baseado no tipo de regra e valor de referência

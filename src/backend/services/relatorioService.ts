@@ -1,5 +1,5 @@
 import prisma from '../../database/client';
-import { StatusFinal, RegraTipo, StatusDespesa } from '../../generated/prisma';
+import { StatusFinal, RegraTipo, StatusDespesa } from '@prisma/client';
 
 class RelatorioService {
   /**

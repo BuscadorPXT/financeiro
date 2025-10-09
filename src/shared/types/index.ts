@@ -2,4 +2,4 @@
 export * from './api.types';
 
 // Re-export Prisma types
-export * from '../../generated/prisma';
+export * from '@prisma/client';

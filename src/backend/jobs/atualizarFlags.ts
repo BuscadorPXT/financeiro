@@ -7,7 +7,7 @@
  */
 
 import prisma from '../../database/client';
-import { StatusFinal } from '../../generated/prisma';
+import { StatusFinal } from '@prisma/client';
 import {
   calcularDiasParaVencer,
   venceHoje,

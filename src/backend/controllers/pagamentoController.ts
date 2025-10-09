@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import pagamentoService from '../services/pagamentoService';
 import { catchAsync } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../../shared/constants';
-import { RegraTipo, MetodoPagamento } from '../../generated/prisma';
+import { RegraTipo, MetodoPagamento } from '@prisma/client';
 
 class PagamentoController {
   /**
