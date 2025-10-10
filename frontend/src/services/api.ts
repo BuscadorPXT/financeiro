@@ -10,7 +10,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // 30 segundos - aumentado para acomodar latência de banco externo
 });
 
 // Request interceptor - adicionar token

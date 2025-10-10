@@ -43,3 +43,48 @@ O arquivo `.env.example` contém a configuração correta. Se você encontrar es
 
 ### Data de Resolução
 10/10/2025
+
+---
+
+## Erro de Timeout no Login: "timeout of 10000ms exceeded"
+
+### Sintomas
+- Login demora muito tempo e falha com timeout
+- Console mostra: `timeout of 10000ms exceeded`
+- Erro: `Network Error: XMLHttpRequest`
+
+### Causa
+O problema geralmente é causado por **frontend não estar rodando** ou parado. Quando o frontend não está ativo, as requisições não são processadas e o timeout ocorre.
+
+### Solução
+
+1. **Verificar se o frontend está rodando**:
+   ```bash
+   lsof -i :3000
+   ```
+   Se não retornar nada, o frontend não está rodando.
+
+2. **Iniciar o frontend**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   Ou usar o comando completo que roda ambos:
+   ```bash
+   npm run dev
+   ```
+
+3. **Verificar se ambos servidores estão ativos**:
+   - Backend: http://localhost:3001
+   - Frontend: http://localhost:3000
+
+### Melhorias Implementadas
+- **Timeout aumentado**: De 10s para 30s em `frontend/src/services/api.ts`
+- Isso ajuda em casos de latência do banco de dados externo (Neon PostgreSQL)
+
+### Performance Esperada
+- Backend responde login em ~0.3 segundos
+- Se demorar mais de 10 segundos, verifique se o frontend está rodando
+
+### Data de Resolução
+10/10/2025
