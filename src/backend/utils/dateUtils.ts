@@ -14,16 +14,20 @@ export function calcularDataVencimento(
 
 /**
  * Calcula quantos dias faltam para o vencimento
+ * Usa apenas a parte da data (ignora timezone) para evitar problemas de cálculo
  */
 export function calcularDiasParaVencer(dataVenc: Date): number {
+  // Cria data de hoje usando apenas ano, mês e dia (ignora timezone)
   const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
+  const hojeLocal = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
 
+  // Cria data de vencimento usando apenas ano, mês e dia (ignora timezone)
   const vencimento = new Date(dataVenc);
-  vencimento.setHours(0, 0, 0, 0);
+  const vencimentoLocal = new Date(vencimento.getFullYear(), vencimento.getMonth(), vencimento.getDate());
 
-  const diffTime = vencimento.getTime() - hoje.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // Calcula diferença em dias
+  const diffTime = vencimentoLocal.getTime() - hojeLocal.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   return diffDays;
 }
