@@ -2,7 +2,12 @@ import axios from 'axios';
 
 // Usa o proxy do Vite em desenvolvimento, URL completa em produção
 const API_BASE_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.DEV ? '/api' : 'http://localhost:3001/api'
+  import.meta.env.DEV
+    ? '/api'  // Desenvolvimento: usa proxy do Vite
+    : (() => {
+        console.error('VITE_API_URL não configurada! Configure no Vercel.');
+        return '/api'; // Fallback que vai falhar, mas deixa claro o erro
+      })()
 );
 
 export const api = axios.create({
