@@ -8,6 +8,7 @@ import SearchInput from '../components/common/SearchInput';
 import ExportButton from '../components/common/ExportButton';
 import Alert from '../components/common/Alert';
 import UsuariosTable from '../components/usuarios/UsuariosTable';
+import UsuarioCardList from '../components/usuarios/UsuarioCardList';
 import UsuarioForm from '../components/usuarios/UsuarioForm';
 import PagamentoRapidoModal from '../components/usuarios/PagamentoRapidoModal';
 import UsuarioHistoricoModal from '../components/usuarios/UsuarioHistoricoModal';
@@ -29,6 +30,13 @@ const UsuariosPage: React.FC = () => {
   const [venceHojeFilter, setVenceHojeFilter] = useState(false);
   const [prox7DiasFilter, setProx7DiasFilter] = useState(false);
   const [emAtrasoFilter, setEmAtrasoFilter] = useState(false);
+
+  // Estado de visualização (cards ou tabela)
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
+  // Estados de ordenação
+  const [sortKey, setSortKey] = useState<keyof Usuario>('nomeCompleto');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Estados de modais
   const [showForm, setShowForm] = useState(false);
@@ -97,6 +105,15 @@ const UsuariosPage: React.FC = () => {
     setEmAtrasoFilter(false);
   };
 
+  const handleSort = (key: keyof Usuario) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
+  };
+
   const handleNovoUsuario = () => {
     setSelectedUsuario(null);
     setShowForm(true);
@@ -155,6 +172,22 @@ const UsuariosPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Usuários</h1>
         <div className="flex gap-3">
+          <Button
+            variant={viewMode === 'cards' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setViewMode('cards')}
+            title="Visualização em Cards"
+          >
+            ⊞
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            title="Visualização em Tabela"
+          >
+            ☰
+          </Button>
           <Button variant="secondary" onClick={() => setShowImport(true)}>
             📥 Importar
           </Button>
@@ -234,31 +267,62 @@ const UsuariosPage: React.FC = () => {
           </p>
         </div>
 
-        <UsuariosTable
-          usuarios={filteredUsuarios}
-          onEdit={handleEditUsuario}
-          onDelete={async (usuario) => {
-            if (confirm(`Deseja realmente excluir o usuário ${usuario.nomeCompleto}?`)) {
+        {viewMode === 'cards' ? (
+          <UsuarioCardList
+            usuarios={filteredUsuarios}
+            onEdit={handleEditUsuario}
+            onDelete={async (usuario) => {
+              if (confirm(`Deseja realmente excluir o usuário ${usuario.nomeCompleto}?`)) {
+                try {
+                  await remove(usuario.id);
+                  toastCRUD.delete('Usuário');
+                  fetchAll();
+                } catch (error) {
+                  showAPIError(error);
+                }
+              }
+            }}
+            onPagamentoRapido={handlePagamentoRapido}
+            onVerHistorico={handleVerHistorico}
+            onToggleAgenda={async (usuario) => {
               try {
-                await remove(usuario.id);
-                toastCRUD.delete('Usuário');
+                await update(usuario.id, { flagAgenda: !usuario.flagAgenda });
                 fetchAll();
               } catch (error) {
                 showAPIError(error);
               }
-            }
-          }}
-          onPagamentoRapido={handlePagamentoRapido}
-          onVerHistorico={handleVerHistorico}
-          onToggleAgenda={async (usuario) => {
-            try {
-              await update(usuario.id, { flagAgenda: !usuario.flagAgenda });
-              fetchAll();
-            } catch (error) {
-              showAPIError(error);
-            }
-          }}
-        />
+            }}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+          />
+        ) : (
+          <UsuariosTable
+            usuarios={filteredUsuarios}
+            onEdit={handleEditUsuario}
+            onDelete={async (usuario) => {
+              if (confirm(`Deseja realmente excluir o usuário ${usuario.nomeCompleto}?`)) {
+                try {
+                  await remove(usuario.id);
+                  toastCRUD.delete('Usuário');
+                  fetchAll();
+                } catch (error) {
+                  showAPIError(error);
+                }
+              }
+            }}
+            onPagamentoRapido={handlePagamentoRapido}
+            onVerHistorico={handleVerHistorico}
+            onToggleAgenda={async (usuario) => {
+              try {
+                await update(usuario.id, { flagAgenda: !usuario.flagAgenda });
+                fetchAll();
+              } catch (error) {
+                showAPIError(error);
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Modais */}
