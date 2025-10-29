@@ -292,12 +292,51 @@ router.post('/importar-usuarios', async (req: Request, res: Response) => {
   }
 });
 
+// Rota para atualizar flags de vencimento
+router.post('/atualizar-flags', async (req: Request, res: Response) => {
+  try {
+    const senha = req.query.senha || req.headers['x-admin-password'];
+    const senhaCorreta = process.env.ADMIN_PASSWORD || 'importar2024';
+
+    if (senha !== senhaCorreta) {
+      return res.status(403).json({
+        erro: 'Acesso negado. Senha incorreta.',
+        dica: 'Use: POST /api/admin/atualizar-flags?senha=SUA_SENHA',
+      });
+    }
+
+    console.log('🔄 Executando atualização de flags via endpoint admin...');
+
+    // Importa e executa o job
+    const { executarJob } = await import('../jobs/atualizarFlags');
+    const resultado = await executarJob();
+
+    return res.json({
+      sucesso: true,
+      mensagem: 'Flags atualizadas com sucesso',
+      resultado: {
+        usuarios: resultado.usuarios,
+        agenda: resultado.agenda,
+        sincronizacao: resultado.sincronizacao,
+        duracao: `${resultado.duracao}ms`,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Erro ao atualizar flags:', error);
+    return res.status(500).json({
+      erro: 'Erro ao atualizar flags',
+      mensagem: error instanceof Error ? error.message : 'Erro desconhecido',
+    });
+  }
+});
+
 // Rota de teste para verificar se o endpoint está acessível
 router.get('/status', (_req: Request, res: Response) => {
   res.json({
     status: 'online',
     endpoints: {
       importar: 'POST /api/admin/importar-usuarios?senha=SUA_SENHA',
+      atualizarFlags: 'POST /api/admin/atualizar-flags?senha=SUA_SENHA',
     },
   });
 });
