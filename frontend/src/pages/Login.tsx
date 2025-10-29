@@ -105,8 +105,8 @@ const Login = () => {
         {/* Informação de teste */}
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Primeiro acesso? Use:<br />
-            <span className="font-mono">admin / admin123</span>
+            Credenciais de acesso:<br />
+            <span className="font-mono">buscadorpxt / buscador2025</span>
           </p>
         </div>
       </div>

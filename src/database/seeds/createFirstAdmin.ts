@@ -15,14 +15,14 @@ async function createFirstAdmin() {
 
     // Criar admin padrão
     await authService.createAdmin(
-      'admin',      // login
-      'admin123',   // senha (MUDAR EM PRODUÇÃO!)
-      'Administrador'  // nome
+      'buscadorpxt',      // login
+      'buscador2025',     // senha
+      'Buscador Admin'    // nome
     );
 
     console.log('✅ Admin criado com sucesso:');
-    console.log(`   Login: admin`);
-    console.log(`   Senha: admin123`);
+    console.log(`   Login: buscadorpxt`);
+    console.log(`   Senha: buscador2025`);
     console.log(`   IMPORTANTE: Altere a senha após o primeiro login!`);
 
   } catch (error) {

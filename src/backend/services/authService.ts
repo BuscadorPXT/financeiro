@@ -92,8 +92,8 @@ class AuthService {
       throw new AppError('Senha atual incorreta', 401);
     }
 
-    // Hash da nova senha
-    const senhaHash = await bcrypt.hash(senhaNova, 10);
+    // Hash da nova senha (8 rounds para melhor performance)
+    const senhaHash = await bcrypt.hash(senhaNova, 8);
 
     // Atualizar senha
     await prisma.admin.update({
@@ -108,8 +108,8 @@ class AuthService {
    * Cria primeiro admin (seed)
    */
   async createAdmin(login: string, senha: string, nome: string) {
-    // Hash da senha
-    const senhaHash = await bcrypt.hash(senha, 10);
+    // Hash da senha (8 rounds para melhor performance)
+    const senhaHash = await bcrypt.hash(senha, 8);
 
     const admin = await prisma.admin.create({
       data: {
