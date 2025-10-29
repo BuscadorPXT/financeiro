@@ -1,6 +1,6 @@
 import prisma from '../../database/client';
 import { Pagamento, RegraTipo, StatusFinal, MetodoPagamento } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
 import {
@@ -10,6 +10,7 @@ import {
   venceProximos7Dias,
 } from '../utils/dateUtils';
 import { calcularComissao, isElegivelComissao } from '../utils/calculoComissao';
+import { CreatePagamentoDTO, UpdatePagamentoDTO } from '../dtos';
 
 class PagamentoService {
   /**
@@ -103,17 +104,7 @@ class PagamentoService {
    * Cria um novo pagamento e atualiza o usuário
    * Implementa regras de PRIMEIRO e RECORRENTE
    */
-  async create(data: {
-    usuarioId: string;
-    dataPagto: Date;
-    valor: number;
-    metodo: MetodoPagamento;
-    conta: string;
-    regraTipo: RegraTipo;
-    regraValor?: number;
-    elegivelComissao?: boolean;
-    observacao?: string;
-  }): Promise<Pagamento> {
+  async create(data: CreatePagamentoDTO): Promise<Pagamento> {
     // Busca o usuário
     const usuario = await prisma.usuario.findUnique({
       where: { id: data.usuarioId },
@@ -244,16 +235,7 @@ class PagamentoService {
    * Atualiza um pagamento
    * IMPORTANTE: Não recalcula automaticamente o usuário (seria necessário reverter estado anterior)
    */
-  async update(
-    id: string,
-    data: Partial<{
-      dataPagto: Date;
-      valor: number;
-      metodo: MetodoPagamento;
-      conta: string;
-      observacao: string;
-    }>
-  ): Promise<Pagamento> {
+  async update(id: string, data: UpdatePagamentoDTO): Promise<Pagamento> {
     await this.findById(id);
 
     // Se a data mudou, atualiza mesPagto

@@ -1,8 +1,10 @@
 import prisma from '../../database/client';
 import { Churn } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
+import churnRepository, { ChurnFilters } from '../repositories/ChurnRepository';
+import { CreateChurnDTO, UpdateChurnDTO } from '../dtos';
 
 class ChurnService {
   /**
@@ -16,58 +18,32 @@ class ChurnService {
     const limit = pagination?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
-    // Filtros
-    if (filters?.revertido !== undefined) {
-      where.revertido = filters.revertido === 'true' || filters.revertido === true;
-    }
-
-    if (filters?.usuarioId) {
-      where.usuarioId = filters.usuarioId;
-    }
+    const repoFilters: ChurnFilters = {
+      revertido: filters?.revertido !== undefined
+        ? filters.revertido === 'true' || filters.revertido === true
+        : undefined,
+      usuarioId: filters?.usuarioId,
+    };
 
     // Filtro por período
     if (filters?.dataInicio && filters?.dataFim) {
-      where.dataChurn = {
-        gte: new Date(filters.dataInicio as string),
-        lte: new Date(filters.dataFim as string),
-      };
+      repoFilters.dataInicio = new Date(filters.dataInicio as string);
+      repoFilters.dataFim = new Date(filters.dataFim as string);
     } else if (filters?.dataInicio) {
-      where.dataChurn = { gte: new Date(filters.dataInicio as string) };
+      repoFilters.dataInicio = new Date(filters.dataInicio as string);
     } else if (filters?.dataFim) {
-      where.dataChurn = { lte: new Date(filters.dataFim as string) };
+      repoFilters.dataFim = new Date(filters.dataFim as string);
     }
 
     // Filtro por mês/ano
     if (filters?.mes && filters?.ano) {
-      const mes = Number(filters.mes);
-      const ano = Number(filters.ano);
-      const dataInicio = new Date(ano, mes - 1, 1);
-      const dataFim = new Date(ano, mes, 0, 23, 59, 59);
-      where.dataChurn = { gte: dataInicio, lte: dataFim };
+      repoFilters.mes = Number(filters.mes);
+      repoFilters.ano = Number(filters.ano);
     }
 
     const [data, total] = await Promise.all([
-      prisma.churn.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { dataChurn: 'desc' },
-        include: {
-          usuario: {
-            select: {
-              id: true,
-              emailLogin: true,
-              nomeCompleto: true,
-              telefone: true,
-              statusFinal: true,
-              indicador: true,
-            },
-          },
-        },
-      }),
-      prisma.churn.count({ where }),
+      churnRepository.findMany(repoFilters, { skip, take: limit }),
+      churnRepository.count(repoFilters),
     ]);
 
     return {
@@ -85,12 +61,7 @@ class ChurnService {
    * Busca um registro de churn por ID
    */
   async findById(id: string): Promise<Churn> {
-    const churn = await prisma.churn.findUnique({
-      where: { id },
-      include: {
-        usuario: true,
-      },
-    });
+    const churn = await churnRepository.findById(id);
 
     if (!churn) {
       throw new AppError('Registro de churn não encontrado', HTTP_STATUS.NOT_FOUND);
@@ -102,11 +73,7 @@ class ChurnService {
   /**
    * Cria um novo registro de churn
    */
-  async create(data: {
-    usuarioId: string;
-    dataChurn: Date;
-    motivo?: string;
-  }): Promise<Churn> {
+  async create(data: CreateChurnDTO): Promise<Churn> {
     // Busca o usuário
     const usuario = await prisma.usuario.findUnique({
       where: { id: data.usuarioId },
@@ -117,7 +84,7 @@ class ChurnService {
     }
 
     // Cria registro de churn e atualiza usuário em transação
-    const churn = await prisma.$transaction(async (tx) => {
+    const churn = await churnRepository.transaction(async (tx) => {
       // Cria o churn
       const novoChurn = await tx.churn.create({
         data: {
@@ -145,19 +112,10 @@ class ChurnService {
   /**
    * Atualiza um registro de churn
    */
-  async update(
-    id: string,
-    data: Partial<{
-      dataChurn: Date;
-      motivo: string;
-    }>
-  ): Promise<Churn> {
+  async update(id: string, data: UpdateChurnDTO): Promise<Churn> {
     await this.findById(id);
 
-    const churn = await prisma.churn.update({
-      where: { id },
-      data,
-    });
+    const churn = await churnRepository.update(id, data);
 
     return churn;
   }
@@ -168,9 +126,7 @@ class ChurnService {
   async delete(id: string): Promise<void> {
     await this.findById(id);
 
-    await prisma.churn.delete({
-      where: { id },
-    });
+    await churnRepository.delete(id);
   }
 
   /**
@@ -184,7 +140,7 @@ class ChurnService {
     }
 
     // Marca churn como revertido e reativa usuário em transação
-    const churnAtualizado = await prisma.$transaction(async (tx) => {
+    const churnAtualizado = await churnRepository.transaction(async (tx) => {
       // Marca churn como revertido
       const churnRevertido = await tx.churn.update({
         where: { id },
@@ -216,24 +172,15 @@ class ChurnService {
     taxaReversao: number;
     churnPorMotivo: Array<{ motivo: string; total: number }>;
   }> {
-    const where: any = {};
-    if (filters?.mes && filters?.ano) {
-      const mes = filters.mes;
-      const ano = filters.ano;
-      const dataInicio = new Date(ano, mes - 1, 1);
-      const dataFim = new Date(ano, mes, 0, 23, 59, 59);
-      where.dataChurn = { gte: dataInicio, lte: dataFim };
-    }
+    const repoFilters: ChurnFilters = {
+      mes: filters?.mes,
+      ano: filters?.ano,
+    };
 
     const [total, revertidos, porMotivo] = await Promise.all([
-      prisma.churn.count({ where }),
-      prisma.churn.count({ where: { ...where, revertido: true } }),
-      prisma.churn.groupBy({
-        by: ['motivo'],
-        where,
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-      }),
+      churnRepository.count(repoFilters),
+      churnRepository.count({ ...repoFilters, revertido: true }),
+      churnRepository.groupByMotivo(repoFilters),
     ]);
 
     const churnAtivos = total - revertidos;
@@ -266,9 +213,7 @@ class ChurnService {
       taxaReversao: number;
     }>
   > {
-    const churns = await prisma.churn.findMany({
-      orderBy: { dataChurn: 'desc' },
-    });
+    const churns = await churnRepository.findAll({});
 
     // Agrupa por mês/ano
     const agrupado = churns.reduce((acc: any, churn) => {
@@ -324,20 +269,7 @@ class ChurnService {
       diasDesdeChurn: number;
     }>
   > {
-    const churns = await prisma.churn.findMany({
-      where: { revertido: false },
-      include: {
-        usuario: {
-          select: {
-            id: true,
-            emailLogin: true,
-            nomeCompleto: true,
-            telefone: true,
-          },
-        },
-      },
-      orderBy: { dataChurn: 'desc' },
-    });
+    const churns = await churnRepository.findNaoRevertidos();
 
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);

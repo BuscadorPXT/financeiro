@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { AppError } from './errorHandler';
+import { UnauthorizedError } from '../errors';
 import prisma from '../../database/client';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
+import authService from '../services/authService';
 
 // Estender interface Request do Express
 declare global {
@@ -19,6 +17,7 @@ declare global {
 
 /**
  * Middleware para verificar autenticação JWT
+ * Inclui: validação de assinatura, expiração, issuer, audience, blacklist
  */
 export const authenticate = async (
   req: Request,
@@ -30,16 +29,14 @@ export const authenticate = async (
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new AppError('Token não fornecido', 401);
+      throw new UnauthorizedError('Token não fornecido');
     }
 
     const token = authHeader.substring(7); // Remove "Bearer "
 
-    // Verificar token
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      login: string;
-    };
+    // Verificar token com todas as validações de segurança
+    // (assinatura, expiração, issuer, audience, blacklist)
+    const decoded = authService.verifyToken(token);
 
     // Verificar se usuário ainda existe e está ativo
     const admin = await prisma.admin.findUnique({
@@ -47,7 +44,7 @@ export const authenticate = async (
     });
 
     if (!admin || !admin.ativo) {
-      throw new AppError('Usuário não autorizado', 401);
+      throw new UnauthorizedError('Usuário não autorizado');
     }
 
     // Adicionar usuário ao request
@@ -58,18 +55,13 @@ export const authenticate = async (
 
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return next(new AppError('Token inválido', 401));
-    }
-    if (error instanceof jwt.TokenExpiredError) {
-      return next(new AppError('Token expirado', 401));
-    }
     next(error);
   }
 };
 
 /**
  * Middleware opcional - pode ser aplicado em rotas específicas
+ * Se token válido, adiciona user ao request. Se inválido, continua sem user.
  */
 export const optionalAuth = async (
   req: Request,
@@ -81,10 +73,7 @@ export const optionalAuth = async (
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const decoded = jwt.verify(token, JWT_SECRET) as {
-        id: string;
-        login: string;
-      };
+      const decoded = authService.verifyToken(token);
 
       req.user = {
         id: decoded.id,

@@ -1,12 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { useUsuarios } from '../hooks/useUsuarios';
+import { useUsuariosLegacy as useUsuarios } from '../hooks/useUsuarios';
 import type { Usuario, CreateUsuarioDTO, UpdateUsuarioDTO } from '../services/usuarioService';
 import FilterBar from '../components/common/FilterBar';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
 import SearchInput from '../components/common/SearchInput';
 import ExportButton from '../components/common/ExportButton';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import Alert from '../components/common/Alert';
 import UsuariosTable from '../components/usuarios/UsuariosTable';
 import UsuarioForm from '../components/usuarios/UsuarioForm';
@@ -14,6 +13,8 @@ import PagamentoRapidoModal from '../components/usuarios/PagamentoRapidoModal';
 import UsuarioHistoricoModal from '../components/usuarios/UsuarioHistoricoModal';
 import ImportarUsuariosModal from '../components/usuarios/ImportarUsuariosModal';
 import { useExport } from '../hooks/useExport';
+import { TableSkeleton } from '../components/skeletons';
+import { toastCRUD, showAPIError } from '../utils/toast';
 
 const UsuariosPage: React.FC = () => {
   const { usuarios, loading, error, fetchAll, create, update, remove } = useUsuarios();
@@ -140,8 +141,11 @@ const UsuariosPage: React.FC = () => {
 
   if (loading && usuarios.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Usuários</h1>
+        </div>
+        <TableSkeleton rows={10} columns={12} />
       </div>
     );
   }
@@ -235,15 +239,24 @@ const UsuariosPage: React.FC = () => {
           onEdit={handleEditUsuario}
           onDelete={async (usuario) => {
             if (confirm(`Deseja realmente excluir o usuário ${usuario.nomeCompleto}?`)) {
-              await remove(usuario.id);
-              fetchAll();
+              try {
+                await remove(usuario.id);
+                toastCRUD.delete('Usuário');
+                fetchAll();
+              } catch (error) {
+                showAPIError(error);
+              }
             }
           }}
           onPagamentoRapido={handlePagamentoRapido}
           onVerHistorico={handleVerHistorico}
           onToggleAgenda={async (usuario) => {
-            await update(usuario.id, { flagAgenda: !usuario.flagAgenda });
-            fetchAll();
+            try {
+              await update(usuario.id, { flagAgenda: !usuario.flagAgenda });
+              fetchAll();
+            } catch (error) {
+              showAPIError(error);
+            }
           }}
         />
       </div>
@@ -257,14 +270,20 @@ const UsuariosPage: React.FC = () => {
             setSelectedUsuario(null);
           }}
           onSave={async (data) => {
-            if (selectedUsuario) {
-              await update(selectedUsuario.id, data as UpdateUsuarioDTO);
-            } else {
-              await create(data as CreateUsuarioDTO);
+            try {
+              if (selectedUsuario) {
+                await update(selectedUsuario.id, data as UpdateUsuarioDTO);
+                toastCRUD.update('Usuário');
+              } else {
+                await create(data as CreateUsuarioDTO);
+                toastCRUD.create('Usuário');
+              }
+              setShowForm(false);
+              setSelectedUsuario(null);
+              fetchAll();
+            } catch (error) {
+              showAPIError(error);
             }
-            setShowForm(false);
-            setSelectedUsuario(null);
-            fetchAll();
           }}
         />
       )}

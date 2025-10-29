@@ -1,6 +1,6 @@
 import prisma from '../../database/client';
 import { Usuario, StatusFinal } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { NotFoundError, ConflictError, ValidationError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 import { isValidEmail, formatPhone } from '../utils/validators';
 import {
@@ -9,7 +9,9 @@ import {
   venceProximos7Dias,
   emAtraso,
 } from '../utils/dateUtils';
-import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
+import { PaginationParams, FilterParams } from '../../shared/types';
+import { createPaginationMeta, PaginatedResponse } from '../types/pagination.types';
+import usuarioRepository, { UsuarioFilters } from '../repositories/UsuarioRepository';
 
 class UsuarioService {
   /**
@@ -23,55 +25,25 @@ class UsuarioService {
     const limit = pagination?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
-    // Filtros
-    if (filters?.status) {
-      where.statusFinal = filters.status;
-    }
-
-    if (filters?.search) {
-      where.OR = [
-        { emailLogin: { contains: filters.search, mode: 'insensitive' } },
-        { nomeCompleto: { contains: filters.search, mode: 'insensitive' } },
-        { telefone: { contains: filters.search } },
-      ];
-    }
-
-    if (filters?.indicador) {
-      where.indicador = filters.indicador;
-    }
-
-    if (filters?.venceHoje) {
-      where.venceHoje = true;
-    }
-
-    if (filters?.prox7Dias) {
-      where.prox7Dias = true;
-    }
-
-    if (filters?.emAtraso) {
-      where.emAtraso = true;
-    }
+    // Converte filtros para o formato do repository
+    const repoFilters: UsuarioFilters = {
+      status: filters?.status as StatusFinal,
+      search: filters?.search,
+      indicador: filters?.indicador,
+      venceHoje: filters?.venceHoje,
+      prox7Dias: filters?.prox7Dias,
+      emAtraso: filters?.emAtraso,
+    };
 
     const [data, total] = await Promise.all([
-      prisma.usuario.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.usuario.count({ where }),
+      usuarioRepository.findMany(repoFilters, { skip, take: limit }),
+      usuarioRepository.count(repoFilters),
     ]);
 
     return {
+      status: 'success',
       data,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: createPaginationMeta(page, limit, total),
     };
   }
 
@@ -79,20 +51,10 @@ class UsuarioService {
    * Busca um usuário por ID
    */
   async findById(id: string): Promise<Usuario> {
-    const usuario = await prisma.usuario.findUnique({
-      where: { id },
-      include: {
-        pagamentos: {
-          orderBy: { dataPagto: 'desc' },
-          take: 10,
-        },
-        agenda: true,
-        churnRegistros: true,
-      },
-    });
+    const usuario = await usuarioRepository.findById(id);
 
     if (!usuario) {
-      throw new AppError('Usuário não encontrado', HTTP_STATUS.NOT_FOUND);
+      throw new NotFoundError('Usuario', id);
     }
 
     return usuario;
@@ -102,9 +64,7 @@ class UsuarioService {
    * Busca um usuário por email
    */
   async findByEmail(email: string): Promise<Usuario | null> {
-    return await prisma.usuario.findUnique({
-      where: { emailLogin: email },
-    });
+    return await usuarioRepository.findByEmail(email);
   }
 
   /**
@@ -119,13 +79,15 @@ class UsuarioService {
   }): Promise<Usuario> {
     // Validações
     if (!isValidEmail(data.emailLogin)) {
-      throw new AppError('Email inválido', HTTP_STATUS.BAD_REQUEST);
+      throw new ValidationError('Email inválido', [
+        { field: 'emailLogin', message: 'Email inválido' },
+      ]);
     }
 
-    // Verifica se email já existe
-    const existing = await this.findByEmail(data.emailLogin);
-    if (existing) {
-      throw new AppError('Email já cadastrado', HTTP_STATUS.CONFLICT);
+    // Verifica se email já existe usando repository
+    const emailExists = await usuarioRepository.emailExists(data.emailLogin);
+    if (emailExists) {
+      throw new ConflictError('Email já cadastrado');
     }
 
     // Formata telefone se fornecido e não vazio
@@ -136,12 +98,10 @@ class UsuarioService {
       telefone = undefined;
     }
 
-    const usuario = await prisma.usuario.create({
-      data: {
-        ...data,
-        telefone,
-        statusFinal: StatusFinal.INATIVO, // Status inicial
-      },
+    const usuario = await usuarioRepository.create({
+      ...data,
+      telefone,
+      statusFinal: StatusFinal.INATIVO, // Status inicial
     });
 
     return usuario;
@@ -171,10 +131,7 @@ class UsuarioService {
       }
     }
 
-    const usuario = await prisma.usuario.update({
-      where: { id },
-      data,
-    });
+    const usuario = await usuarioRepository.update(id, data);
 
     return usuario;
   }
@@ -205,12 +162,9 @@ class UsuarioService {
       statusFinal = StatusFinal.ATIVO;
     }
 
-    return await prisma.usuario.update({
-      where: { id },
-      data: {
-        ...flags,
-        statusFinal,
-      },
+    return await usuarioRepository.update(id, {
+      ...flags,
+      statusFinal,
     });
   }
 

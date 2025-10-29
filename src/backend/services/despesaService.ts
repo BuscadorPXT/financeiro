@@ -1,8 +1,10 @@
 import prisma from '../../database/client';
 import { Despesa, StatusDespesa } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
+import despesaRepository, { DespesaFilters } from '../repositories/DespesaRepository';
+import { CreateDespesaDTO, UpdateDespesaDTO } from '../dtos';
 
 class DespesaService {
   /**
@@ -16,54 +18,20 @@ class DespesaService {
     const limit = pagination?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
-    // Filtros
-    if (filters?.categoria) {
-      where.categoria = filters.categoria;
-    }
-
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-
-    if (filters?.conta) {
-      where.conta = filters.conta;
-    }
-
-    if (filters?.indicador) {
-      where.indicador = filters.indicador;
-    }
-
-    if (filters?.mes) {
-      where.competenciaMes = Number(filters.mes);
-    }
-
-    if (filters?.ano) {
-      where.competenciaAno = Number(filters.ano);
-    }
-
-    // Filtro combinado de competência (formato: "10/2024")
-    if (filters?.competencia) {
-      const [mes, ano] = filters.competencia.split('/');
-      if (mes && ano) {
-        where.competenciaMes = Number(mes);
-        where.competenciaAno = Number(ano);
-      }
-    }
+    // Converte filtros para o formato do repository
+    const repoFilters: DespesaFilters = {
+      categoria: filters?.categoria,
+      status: filters?.status as StatusDespesa | undefined,
+      conta: filters?.conta,
+      indicador: filters?.indicador,
+      mes: filters?.mes ? Number(filters.mes) : undefined,
+      ano: filters?.ano ? Number(filters.ano) : undefined,
+      competencia: filters?.competencia,
+    };
 
     const [data, total] = await Promise.all([
-      prisma.despesa.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [
-          { competenciaAno: 'desc' },
-          { competenciaMes: 'desc' },
-          { createdAt: 'desc' },
-        ],
-      }),
-      prisma.despesa.count({ where }),
+      despesaRepository.findMany(repoFilters, { skip, take: limit }),
+      despesaRepository.count(repoFilters),
     ]);
 
     return {
@@ -81,9 +49,7 @@ class DespesaService {
    * Busca uma despesa por ID
    */
   async findById(id: string): Promise<Despesa> {
-    const despesa = await prisma.despesa.findUnique({
-      where: { id },
-    });
+    const despesa = await despesaRepository.findById(id);
 
     if (!despesa) {
       throw new AppError('Despesa não encontrada', HTTP_STATUS.NOT_FOUND);
@@ -95,16 +61,7 @@ class DespesaService {
   /**
    * Cria uma nova despesa
    */
-  async create(data: {
-    categoria: string;
-    descricao: string;
-    valor: number;
-    conta?: string;
-    indicador?: string;
-    status?: StatusDespesa;
-    competenciaMes: number;
-    competenciaAno: number;
-  }): Promise<Despesa> {
+  async create(data: CreateDespesaDTO): Promise<Despesa> {
     // Validações
     if (data.competenciaMes < 1 || data.competenciaMes > 12) {
       throw new AppError(
@@ -117,17 +74,15 @@ class DespesaService {
       throw new AppError('Valor deve ser maior que zero', HTTP_STATUS.BAD_REQUEST);
     }
 
-    const despesa = await prisma.despesa.create({
-      data: {
-        categoria: data.categoria,
-        descricao: data.descricao,
-        valor: data.valor,
-        conta: data.conta,
-        indicador: data.indicador,
-        status: data.status || StatusDespesa.PENDENTE,
-        competenciaMes: data.competenciaMes,
-        competenciaAno: data.competenciaAno,
-      },
+    const despesa = await despesaRepository.create({
+      categoria: data.categoria,
+      descricao: data.descricao,
+      valor: data.valor,
+      conta: data.conta,
+      indicador: data.indicador,
+      status: data.status || StatusDespesa.PENDENTE,
+      competenciaMes: data.competenciaMes,
+      competenciaAno: data.competenciaAno,
     });
 
     return despesa;
@@ -136,19 +91,7 @@ class DespesaService {
   /**
    * Atualiza uma despesa
    */
-  async update(
-    id: string,
-    data: Partial<{
-      categoria: string;
-      descricao: string;
-      valor: number;
-      conta: string;
-      indicador: string;
-      status: StatusDespesa;
-      competenciaMes: number;
-      competenciaAno: number;
-    }>
-  ): Promise<Despesa> {
+  async update(id: string, data: UpdateDespesaDTO): Promise<Despesa> {
     await this.findById(id);
 
     // Validações
@@ -163,10 +106,7 @@ class DespesaService {
       throw new AppError('Valor deve ser maior que zero', HTTP_STATUS.BAD_REQUEST);
     }
 
-    const despesa = await prisma.despesa.update({
-      where: { id },
-      data,
-    });
+    const despesa = await despesaRepository.update(id, data);
 
     return despesa;
   }
@@ -177,9 +117,7 @@ class DespesaService {
   async delete(id: string): Promise<void> {
     await this.findById(id);
 
-    await prisma.despesa.delete({
-      where: { id },
-    });
+    await despesaRepository.delete(id);
   }
 
   /**
@@ -207,38 +145,26 @@ class DespesaService {
     despesasPagas: number;
     despesasPendentes: number;
   }> {
-    const where: any = {};
-    if (filters?.mes) where.competenciaMes = filters.mes;
-    if (filters?.ano) where.competenciaAno = filters.ano;
+    const repoFilters: DespesaFilters = {
+      mes: filters?.mes,
+      ano: filters?.ano,
+    };
 
     const [total, somaTotal, somaPago, somaPendente, countPago, countPendente] =
       await Promise.all([
-        prisma.despesa.count({ where }),
-        prisma.despesa.aggregate({
-          where,
-          _sum: { valor: true },
-        }),
-        prisma.despesa.aggregate({
-          where: { ...where, status: StatusDespesa.PAGO },
-          _sum: { valor: true },
-        }),
-        prisma.despesa.aggregate({
-          where: { ...where, status: StatusDespesa.PENDENTE },
-          _sum: { valor: true },
-        }),
-        prisma.despesa.count({
-          where: { ...where, status: StatusDespesa.PAGO },
-        }),
-        prisma.despesa.count({
-          where: { ...where, status: StatusDespesa.PENDENTE },
-        }),
+        despesaRepository.count(repoFilters),
+        despesaRepository.sumValues(repoFilters),
+        despesaRepository.sumValues({ ...repoFilters, status: StatusDespesa.PAGO }),
+        despesaRepository.sumValues({ ...repoFilters, status: StatusDespesa.PENDENTE }),
+        despesaRepository.count({ ...repoFilters, status: StatusDespesa.PAGO }),
+        despesaRepository.count({ ...repoFilters, status: StatusDespesa.PENDENTE }),
       ]);
 
     return {
       totalDespesas: total,
-      valorTotal: Number(somaTotal._sum.valor || 0),
-      valorPago: Number(somaPago._sum.valor || 0),
-      valorPendente: Number(somaPendente._sum.valor || 0),
+      valorTotal: somaTotal,
+      valorPago: somaPago,
+      valorPendente: somaPendente,
       despesasPagas: countPago,
       despesasPendentes: countPendente,
     };
@@ -259,36 +185,25 @@ class DespesaService {
       valorPendente: number;
     }>
   > {
-    const where: any = {};
-    if (filters?.mes) where.competenciaMes = filters.mes;
-    if (filters?.ano) where.competenciaAno = filters.ano;
+    const repoFilters: DespesaFilters = {
+      mes: filters?.mes,
+      ano: filters?.ano,
+    };
 
-    const despesas = await prisma.despesa.groupBy({
-      by: ['categoria'],
-      where,
-      _count: { id: true },
-      _sum: { valor: true },
-      orderBy: { _sum: { valor: 'desc' } },
-    });
+    const despesas = await despesaRepository.groupByCategoria(repoFilters);
 
     const relatorio = await Promise.all(
       despesas.map(async (item) => {
         const [somaPago, somaPendente] = await Promise.all([
-          prisma.despesa.aggregate({
-            where: {
-              ...where,
-              categoria: item.categoria,
-              status: StatusDespesa.PAGO,
-            },
-            _sum: { valor: true },
+          despesaRepository.sumValues({
+            ...repoFilters,
+            categoria: item.categoria,
+            status: StatusDespesa.PAGO,
           }),
-          prisma.despesa.aggregate({
-            where: {
-              ...where,
-              categoria: item.categoria,
-              status: StatusDespesa.PENDENTE,
-            },
-            _sum: { valor: true },
+          despesaRepository.sumValues({
+            ...repoFilters,
+            categoria: item.categoria,
+            status: StatusDespesa.PENDENTE,
           }),
         ]);
 
@@ -296,8 +211,8 @@ class DespesaService {
           categoria: item.categoria,
           totalDespesas: item._count.id,
           valorTotal: Number(item._sum.valor || 0),
-          valorPago: Number(somaPago._sum.valor || 0),
-          valorPendente: Number(somaPendente._sum.valor || 0),
+          valorPago: somaPago,
+          valorPendente: somaPendente,
         };
       })
     );
@@ -320,38 +235,24 @@ class DespesaService {
       categorias: number;
     }>
   > {
-    const despesas = await prisma.despesa.groupBy({
-      by: ['competenciaMes', 'competenciaAno'],
-      _count: { id: true },
-      _sum: { valor: true },
-      orderBy: [{ competenciaAno: 'desc' }, { competenciaMes: 'desc' }],
-    });
+    const despesas = await despesaRepository.groupByCompetencia();
 
     const relatorio = await Promise.all(
       despesas.map(async (item) => {
         const [somaPago, somaPendente, categorias] = await Promise.all([
-          prisma.despesa.aggregate({
-            where: {
-              competenciaMes: item.competenciaMes,
-              competenciaAno: item.competenciaAno,
-              status: StatusDespesa.PAGO,
-            },
-            _sum: { valor: true },
+          despesaRepository.sumValues({
+            mes: item.competenciaMes,
+            ano: item.competenciaAno,
+            status: StatusDespesa.PAGO,
           }),
-          prisma.despesa.aggregate({
-            where: {
-              competenciaMes: item.competenciaMes,
-              competenciaAno: item.competenciaAno,
-              status: StatusDespesa.PENDENTE,
-            },
-            _sum: { valor: true },
+          despesaRepository.sumValues({
+            mes: item.competenciaMes,
+            ano: item.competenciaAno,
+            status: StatusDespesa.PENDENTE,
           }),
-          prisma.despesa.groupBy({
-            by: ['categoria'],
-            where: {
-              competenciaMes: item.competenciaMes,
-              competenciaAno: item.competenciaAno,
-            },
+          despesaRepository.groupByCategoria({
+            mes: item.competenciaMes,
+            ano: item.competenciaAno,
           }),
         ]);
 
@@ -364,8 +265,8 @@ class DespesaService {
           ano: item.competenciaAno,
           totalDespesas: item._count.id,
           valorTotal: Number(item._sum.valor || 0),
-          valorPago: Number(somaPago._sum.valor || 0),
-          valorPendente: Number(somaPendente._sum.valor || 0),
+          valorPago: somaPago,
+          valorPendente: somaPendente,
           categorias: categorias.length,
         };
       })

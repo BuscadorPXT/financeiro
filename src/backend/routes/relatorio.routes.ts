@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import relatorioController from '../controllers/relatorioController';
+import { reportsLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
+
+// Aplicar rate limiting em todas as rotas de relatórios
+// Limite: 30 requisições por 15 minutos por IP
+// (queries pesadas que consomem recursos do banco)
+router.use(reportsLimiter);
 
 // GET /api/relatorios/dashboard - Dashboard principal
 router.get('/dashboard', relatorioController.getDashboard);

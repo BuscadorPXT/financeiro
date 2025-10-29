@@ -1,8 +1,10 @@
 import prisma from '../../database/client';
 import { Comissao, RegraTipo } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
+import comissaoRepository, { ComissaoFilters } from '../repositories/ComissaoRepository';
+import { CreateComissaoDTO, UpdateComissaoDTO } from '../dtos';
 
 class ComissaoService {
   /**
@@ -16,44 +18,16 @@ class ComissaoService {
     const limit = pagination?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
-    // Filtros
-    if (filters?.indicador) {
-      where.indicador = filters.indicador;
-    }
-
-    if (filters?.regraTipo) {
-      where.regraTipo = filters.regraTipo;
-    }
-
-    if (filters?.mesRef) {
-      where.mesRef = filters.mesRef;
-    }
-
-    if (filters?.pagamentoId) {
-      where.pagamentoId = filters.pagamentoId;
-    }
+    const repoFilters: ComissaoFilters = {
+      indicador: filters?.indicador,
+      regraTipo: filters?.regraTipo as RegraTipo | undefined,
+      mesRef: filters?.mesRef,
+      pagamentoId: filters?.pagamentoId,
+    };
 
     const [data, total] = await Promise.all([
-      prisma.comissao.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          pagamento: {
-            select: {
-              id: true,
-              dataPagto: true,
-              valor: true,
-              metodo: true,
-              usuarioId: true,
-            },
-          },
-        },
-      }),
-      prisma.comissao.count({ where }),
+      comissaoRepository.findMany(repoFilters, { skip, take: limit }),
+      comissaoRepository.count(repoFilters),
     ]);
 
     return {
@@ -71,22 +45,7 @@ class ComissaoService {
    * Busca uma comissão por ID
    */
   async findById(id: string): Promise<Comissao> {
-    const comissao = await prisma.comissao.findUnique({
-      where: { id },
-      include: {
-        pagamento: {
-          include: {
-            usuario: {
-              select: {
-                id: true,
-                emailLogin: true,
-                nomeCompleto: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const comissao = await comissaoRepository.findById(id);
 
     if (!comissao) {
       throw new AppError('Comissão não encontrada', HTTP_STATUS.NOT_FOUND);
@@ -99,17 +58,9 @@ class ComissaoService {
    * Cria uma nova comissão
    * Geralmente criada automaticamente via pagamento
    */
-  async create(data: {
-    pagamentoId: string;
-    indicador: string;
-    regraTipo: RegraTipo;
-    valor: number;
-    mesRef: string;
-  }): Promise<Comissao> {
+  async create(data: CreateComissaoDTO): Promise<Comissao> {
     // Verifica se já existe comissão para este pagamento
-    const existente = await prisma.comissao.findUnique({
-      where: { pagamentoId: data.pagamentoId },
-    });
+    const existente = await comissaoRepository.findByPagamentoId(data.pagamentoId);
 
     if (existente) {
       throw new AppError(
@@ -118,14 +69,14 @@ class ComissaoService {
       );
     }
 
-    const comissao = await prisma.comissao.create({
-      data: {
-        pagamentoId: data.pagamentoId,
-        indicador: data.indicador,
-        regraTipo: data.regraTipo,
-        valor: data.valor,
-        mesRef: data.mesRef,
+    const comissao = await comissaoRepository.create({
+      pagamento: {
+        connect: { id: data.pagamentoId },
       },
+      indicador: data.indicador,
+      regraTipo: data.regraTipo,
+      valor: data.valor,
+      mesRef: data.mesRef,
     });
 
     return comissao;
@@ -134,20 +85,10 @@ class ComissaoService {
   /**
    * Atualiza uma comissão
    */
-  async update(
-    id: string,
-    data: Partial<{
-      indicador: string;
-      valor: number;
-      mesRef: string;
-    }>
-  ): Promise<Comissao> {
+  async update(id: string, data: UpdateComissaoDTO): Promise<Comissao> {
     await this.findById(id);
 
-    const comissao = await prisma.comissao.update({
-      where: { id },
-      data,
-    });
+    const comissao = await comissaoRepository.update(id, data);
 
     return comissao;
   }
@@ -158,9 +99,7 @@ class ComissaoService {
   async delete(id: string): Promise<void> {
     await this.findById(id);
 
-    await prisma.comissao.delete({
-      where: { id },
-    });
+    await comissaoRepository.delete(id);
   }
 
   /**
@@ -175,44 +114,29 @@ class ComissaoService {
     valorRecorrentes: number;
     totalIndicadores: number;
   }> {
-    const where: any = {};
-    if (filters?.mes) where.mesRef = filters.mes;
-    if (filters?.indicador) where.indicador = filters.indicador;
+    const repoFilters: ComissaoFilters = {
+      mesRef: filters?.mes,
+      indicador: filters?.indicador,
+    };
 
     const [total, somaTotal, primeiras, somaPrimeiras, recorrentes, somaRecorrentes, indicadores] =
       await Promise.all([
-        prisma.comissao.count({ where }),
-        prisma.comissao.aggregate({
-          where,
-          _sum: { valor: true },
-        }),
-        prisma.comissao.count({
-          where: { ...where, regraTipo: RegraTipo.PRIMEIRO },
-        }),
-        prisma.comissao.aggregate({
-          where: { ...where, regraTipo: RegraTipo.PRIMEIRO },
-          _sum: { valor: true },
-        }),
-        prisma.comissao.count({
-          where: { ...where, regraTipo: RegraTipo.RECORRENTE },
-        }),
-        prisma.comissao.aggregate({
-          where: { ...where, regraTipo: RegraTipo.RECORRENTE },
-          _sum: { valor: true },
-        }),
-        prisma.comissao.groupBy({
-          by: ['indicador'],
-          where,
-        }),
+        comissaoRepository.count(repoFilters),
+        comissaoRepository.sumValues(repoFilters),
+        comissaoRepository.count({ ...repoFilters, regraTipo: RegraTipo.PRIMEIRO }),
+        comissaoRepository.sumValues({ ...repoFilters, regraTipo: RegraTipo.PRIMEIRO }),
+        comissaoRepository.count({ ...repoFilters, regraTipo: RegraTipo.RECORRENTE }),
+        comissaoRepository.sumValues({ ...repoFilters, regraTipo: RegraTipo.RECORRENTE }),
+        comissaoRepository.groupByIndicador(repoFilters),
       ]);
 
     return {
       totalComissoes: total,
-      valorTotal: Number(somaTotal._sum.valor || 0),
+      valorTotal: somaTotal,
       primeirasAdesoes: primeiras,
-      valorPrimeiras: Number(somaPrimeiras._sum.valor || 0),
+      valorPrimeiras: somaPrimeiras,
       recorrentes: recorrentes,
-      valorRecorrentes: Number(somaRecorrentes._sum.valor || 0),
+      valorRecorrentes: somaRecorrentes,
       totalIndicadores: indicadores.length,
     };
   }
@@ -233,49 +157,34 @@ class ComissaoService {
       valorRecorrentes: number;
     }>
   > {
-    const where: any = {};
-    if (filters?.mes) where.mesRef = filters.mes;
+    const repoFilters: ComissaoFilters = {
+      mesRef: filters?.mes,
+    };
 
-    const comissoes = await prisma.comissao.groupBy({
-      by: ['indicador'],
-      where,
-      _count: { id: true },
-      _sum: { valor: true },
-      orderBy: { _sum: { valor: 'desc' } },
-    });
+    const comissoes = await comissaoRepository.groupByIndicador(repoFilters);
 
     const consolidacao = await Promise.all(
       comissoes.map(async (item) => {
         const [primeiras, somaPrimeiras, recorrentes, somaRecorrentes] = await Promise.all([
-          prisma.comissao.count({
-            where: {
-              ...where,
-              indicador: item.indicador,
-              regraTipo: RegraTipo.PRIMEIRO,
-            },
+          comissaoRepository.count({
+            ...repoFilters,
+            indicador: item.indicador,
+            regraTipo: RegraTipo.PRIMEIRO,
           }),
-          prisma.comissao.aggregate({
-            where: {
-              ...where,
-              indicador: item.indicador,
-              regraTipo: RegraTipo.PRIMEIRO,
-            },
-            _sum: { valor: true },
+          comissaoRepository.sumValues({
+            ...repoFilters,
+            indicador: item.indicador,
+            regraTipo: RegraTipo.PRIMEIRO,
           }),
-          prisma.comissao.count({
-            where: {
-              ...where,
-              indicador: item.indicador,
-              regraTipo: RegraTipo.RECORRENTE,
-            },
+          comissaoRepository.count({
+            ...repoFilters,
+            indicador: item.indicador,
+            regraTipo: RegraTipo.RECORRENTE,
           }),
-          prisma.comissao.aggregate({
-            where: {
-              ...where,
-              indicador: item.indicador,
-              regraTipo: RegraTipo.RECORRENTE,
-            },
-            _sum: { valor: true },
+          comissaoRepository.sumValues({
+            ...repoFilters,
+            indicador: item.indicador,
+            regraTipo: RegraTipo.RECORRENTE,
           }),
         ]);
 
@@ -284,9 +193,9 @@ class ComissaoService {
           totalComissoes: item._count.id,
           valorTotal: Number(item._sum.valor || 0),
           primeirasAdesoes: primeiras,
-          valorPrimeiras: Number(somaPrimeiras._sum.valor || 0),
+          valorPrimeiras: somaPrimeiras,
           recorrentes: recorrentes,
-          valorRecorrentes: Number(somaRecorrentes._sum.valor || 0),
+          valorRecorrentes: somaRecorrentes,
         };
       })
     );
@@ -309,47 +218,29 @@ class ComissaoService {
       indicadores: number;
     }>
   > {
-    const comissoes = await prisma.comissao.groupBy({
-      by: ['mesRef'],
-      _count: { id: true },
-      _sum: { valor: true },
-      orderBy: { mesRef: 'desc' },
-    });
+    const comissoes = await comissaoRepository.groupByMes();
 
     const relatorio = await Promise.all(
       comissoes.map(async (item) => {
         const [primeiras, somaPrimeiras, recorrentes, somaRecorrentes, indicadores] =
           await Promise.all([
-            prisma.comissao.count({
-              where: {
-                mesRef: item.mesRef,
-                regraTipo: RegraTipo.PRIMEIRO,
-              },
+            comissaoRepository.count({
+              mesRef: item.mesRef,
+              regraTipo: RegraTipo.PRIMEIRO,
             }),
-            prisma.comissao.aggregate({
-              where: {
-                mesRef: item.mesRef,
-                regraTipo: RegraTipo.PRIMEIRO,
-              },
-              _sum: { valor: true },
+            comissaoRepository.sumValues({
+              mesRef: item.mesRef,
+              regraTipo: RegraTipo.PRIMEIRO,
             }),
-            prisma.comissao.count({
-              where: {
-                mesRef: item.mesRef,
-                regraTipo: RegraTipo.RECORRENTE,
-              },
+            comissaoRepository.count({
+              mesRef: item.mesRef,
+              regraTipo: RegraTipo.RECORRENTE,
             }),
-            prisma.comissao.aggregate({
-              where: {
-                mesRef: item.mesRef,
-                regraTipo: RegraTipo.RECORRENTE,
-              },
-              _sum: { valor: true },
+            comissaoRepository.sumValues({
+              mesRef: item.mesRef,
+              regraTipo: RegraTipo.RECORRENTE,
             }),
-            prisma.comissao.groupBy({
-              by: ['indicador'],
-              where: { mesRef: item.mesRef },
-            }),
+            comissaoRepository.groupByIndicador({ mesRef: item.mesRef }),
           ]);
 
         return {
@@ -357,9 +248,9 @@ class ComissaoService {
           totalComissoes: item._count.id,
           valorTotal: Number(item._sum.valor || 0),
           primeirasAdesoes: primeiras,
-          valorPrimeiras: Number(somaPrimeiras._sum.valor || 0),
+          valorPrimeiras: somaPrimeiras,
           recorrentes: recorrentes,
-          valorRecorrentes: Number(somaRecorrentes._sum.valor || 0),
+          valorRecorrentes: somaRecorrentes,
           indicadores: indicadores.length,
         };
       })
@@ -387,24 +278,8 @@ class ComissaoService {
       };
     }>
   > {
-    const where: any = { indicador };
-    if (filters?.mes) where.mesRef = filters.mes;
-
-    const comissoes = await prisma.comissao.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        pagamento: {
-          include: {
-            usuario: {
-              select: {
-                emailLogin: true,
-                nomeCompleto: true,
-              },
-            },
-          },
-        },
-      },
+    const comissoes = await comissaoRepository.findByIndicador(indicador, {
+      mesRef: filters?.mes,
     });
 
     return comissoes.map((c) => ({

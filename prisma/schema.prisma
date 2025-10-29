@@ -93,6 +93,11 @@ model Usuario {
   churnRegistros        Churn[]
   prospeccaoConvertida  Prospeccao?
 
+  // Índices para performance
+  @@index([statusFinal, ativoAtual])
+  @@index([dataVenc])
+  @@index([indicador])
+  @@index([venceHoje, prox7Dias, emAtraso])
   @@map("usuarios")
 }
 
@@ -117,6 +122,10 @@ model Pagamento {
   usuario          Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   comissao         Comissao?
 
+  // Índices para performance
+  @@index([usuarioId, dataPagto])
+  @@index([mesPagto, regraTipo])
+  @@index([metodo, conta])
   @@map("pagamentos")
 }
 
@@ -134,6 +143,9 @@ model Despesa {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
+  // Índices para performance
+  @@index([competenciaMes, competenciaAno])
+  @@index([categoria])
   @@map("despesas")
 }
 
@@ -153,6 +165,9 @@ model Agenda {
   // Relations
   usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
+  // Índices para performance
+  @@index([usuarioId, status])
+  @@index([dataVenc])
   @@map("agenda")
 }
 
@@ -184,6 +199,9 @@ model Comissao {
   // Relations
   pagamento    Pagamento   @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
 
+  // Índices para performance
+  @@index([indicador, mesRef])
+  @@index([regraTipo])
   @@map("comissoes")
 }
 

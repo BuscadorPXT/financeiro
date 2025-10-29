@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAgenda } from '../hooks/useAgenda';
-import { useUsuarios } from '../hooks/useUsuarios';
+import { useUsuariosLegacy as useUsuarios } from '../hooks/useUsuarios';
 import type { Agenda as AgendaType } from '../services/agendaService';
 import FilterBar from '../components/common/FilterBar';
 import Button from '../components/common/Button';

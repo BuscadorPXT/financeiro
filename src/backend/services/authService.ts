@@ -1,10 +1,22 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../../database/client';
-import { AppError } from '../middleware/errorHandler';
+import { UnauthorizedError, NotFoundError, AppError } from '../errors';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
+// Validação obrigatória do JWT_SECRET
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  throw new Error(
+    'JWT_SECRET é obrigatório e deve ter no mínimo 32 caracteres. Configure no arquivo .env'
+  );
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_ISSUER = 'financasbuscador';
+const JWT_AUDIENCE = 'financasbuscador-api';
+
+// Blacklist de tokens revogados (em memória - migrar para Redis em produção)
+const tokenBlacklist = new Set<string>();
 
 class AuthService {
   /**
@@ -17,28 +29,33 @@ class AuthService {
     });
 
     if (!admin) {
-      throw new AppError('Login ou senha inválidos', 401);
+      throw new UnauthorizedError('Login ou senha inválidos');
     }
 
     if (!admin.ativo) {
-      throw new AppError('Usuário desativado', 401);
+      throw new UnauthorizedError('Usuário desativado');
     }
 
     // Verificar senha
     const senhaValida = await bcrypt.compare(senha, admin.senha);
 
     if (!senhaValida) {
-      throw new AppError('Login ou senha inválidos', 401);
+      throw new UnauthorizedError('Login ou senha inválidos');
     }
 
-    // Gerar token JWT
+    // Gerar token JWT com padrão de segurança
     const token = jwt.sign(
       {
         id: admin.id,
         login: admin.login,
       },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } as any
+      {
+        expiresIn: JWT_EXPIRES_IN,
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+        subject: String(admin.id),
+      } as jwt.SignOptions
     );
 
     return {
@@ -67,7 +84,7 @@ class AuthService {
     });
 
     if (!admin) {
-      throw new AppError('Usuário não encontrado', 404);
+      throw new NotFoundError('Admin', userId);
     }
 
     return admin;
@@ -82,14 +99,14 @@ class AuthService {
     });
 
     if (!admin) {
-      throw new AppError('Usuário não encontrado', 404);
+      throw new NotFoundError('Admin', userId);
     }
 
     // Verificar senha atual
     const senhaValida = await bcrypt.compare(senhaAtual, admin.senha);
 
     if (!senhaValida) {
-      throw new AppError('Senha atual incorreta', 401);
+      throw new UnauthorizedError('Senha atual incorreta');
     }
 
     // Hash da nova senha (8 rounds para melhor performance)
@@ -124,6 +141,67 @@ class AuthService {
       login: admin.login,
       nome: admin.nome,
     };
+  }
+
+  /**
+   * Logout - adiciona token à blacklist
+   */
+  async logout(token: string): Promise<void> {
+    try {
+      // Decodificar token para pegar tempo de expiração
+      const decoded = jwt.decode(token) as any;
+
+      if (decoded && decoded.exp) {
+        // Adicionar à blacklist
+        tokenBlacklist.add(token);
+
+        // Remover da blacklist após expiração (cleanup automático)
+        const expiresIn = (decoded.exp * 1000) - Date.now();
+        if (expiresIn > 0) {
+          setTimeout(() => {
+            tokenBlacklist.delete(token);
+          }, expiresIn);
+        }
+      }
+    } catch (error) {
+      // Ignora erros de decodificação
+      throw new AppError('Erro ao fazer logout', 500);
+    }
+  }
+
+  /**
+   * Verifica se token está na blacklist
+   */
+  isTokenBlacklisted(token: string): boolean {
+    return tokenBlacklist.has(token);
+  }
+
+  /**
+   * Valida token JWT com todas as verificações de segurança
+   */
+  verifyToken(token: string): { id: string; login: string } {
+    try {
+      // Verificar se está na blacklist
+      if (this.isTokenBlacklisted(token)) {
+        throw new UnauthorizedError('Token foi revogado');
+      }
+
+      // Verificar assinatura, expiração, issuer e audience
+      const decoded = jwt.verify(token, JWT_SECRET, {
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+      }) as { id: string; login: string };
+
+      return decoded;
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        throw new UnauthorizedError('Token expirado');
+      }
+      if (error instanceof jwt.JsonWebTokenError) {
+        throw new UnauthorizedError('Token inválido');
+      }
+      throw error;
+    }
   }
 }
 

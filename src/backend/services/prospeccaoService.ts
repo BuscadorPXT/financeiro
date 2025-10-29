@@ -1,8 +1,10 @@
 import prisma from '../../database/client';
 import { Prospeccao, StatusFinal } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
+import prospeccaoRepository, { ProspeccaoFilters } from '../repositories/ProspeccaoRepository';
+import { CreateProspeccaoDTO, UpdateProspeccaoDTO, ConversaoProspeccaoDTO } from '../dtos';
 
 class ProspeccaoService {
   /**
@@ -16,47 +18,19 @@ class ProspeccaoService {
     const limit = pagination?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
-    // Filtros
-    if (filters?.origem) {
-      where.origem = filters.origem;
-    }
-
-    if (filters?.indicador) {
-      where.indicador = filters.indicador;
-    }
-
-    if (filters?.convertido !== undefined) {
-      where.convertido = filters.convertido === 'true' || filters.convertido === true;
-    }
-
-    if (filters?.search) {
-      where.OR = [
-        { nome: { contains: filters.search } },
-        { email: { contains: filters.search } },
-        { telefone: { contains: filters.search } },
-      ];
-    }
+    // Converte filtros para o formato do repository
+    const repoFilters: ProspeccaoFilters = {
+      origem: filters?.origem,
+      indicador: filters?.indicador,
+      convertido: filters?.convertido !== undefined
+        ? filters.convertido === 'true' || filters.convertido === true
+        : undefined,
+      search: filters?.search,
+    };
 
     const [data, total] = await Promise.all([
-      prisma.prospeccao.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          usuario: {
-            select: {
-              id: true,
-              emailLogin: true,
-              nomeCompleto: true,
-              statusFinal: true,
-            },
-          },
-        },
-      }),
-      prisma.prospeccao.count({ where }),
+      prospeccaoRepository.findMany(repoFilters, { skip, take: limit }),
+      prospeccaoRepository.count(repoFilters),
     ]);
 
     return {
@@ -74,22 +48,7 @@ class ProspeccaoService {
    * Busca uma prospecção por ID
    */
   async findById(id: string): Promise<Prospeccao> {
-    const prospeccao = await prisma.prospeccao.findUnique({
-      where: { id },
-      include: {
-        usuario: {
-          select: {
-            id: true,
-            emailLogin: true,
-            nomeCompleto: true,
-            telefone: true,
-            statusFinal: true,
-            ciclo: true,
-            createdAt: true,
-          },
-        },
-      },
-    });
+    const prospeccao = await prospeccaoRepository.findById(id);
 
     if (!prospeccao) {
       throw new AppError('Prospecção não encontrada', HTTP_STATUS.NOT_FOUND);
@@ -101,17 +60,9 @@ class ProspeccaoService {
   /**
    * Cria uma nova prospecção
    */
-  async create(data: {
-    email: string;
-    nome: string;
-    telefone?: string;
-    origem?: string;
-    indicador?: string;
-  }): Promise<Prospeccao> {
+  async create(data: CreateProspeccaoDTO): Promise<Prospeccao> {
     // Verifica se já existe prospecção com este email
-    const existente = await prisma.prospeccao.findFirst({
-      where: { email: data.email },
-    });
+    const existente = await prospeccaoRepository.findByEmail(data.email);
 
     if (existente) {
       throw new AppError(
@@ -120,14 +71,12 @@ class ProspeccaoService {
       );
     }
 
-    const prospeccao = await prisma.prospeccao.create({
-      data: {
-        email: data.email,
-        nome: data.nome,
-        telefone: data.telefone,
-        origem: data.origem,
-        indicador: data.indicador,
-      },
+    const prospeccao = await prospeccaoRepository.create({
+      email: data.email,
+      nome: data.nome,
+      telefone: data.telefone,
+      origem: data.origem,
+      indicador: data.indicador,
     });
 
     return prospeccao;
@@ -136,36 +85,19 @@ class ProspeccaoService {
   /**
    * Atualiza uma prospecção
    */
-  async update(
-    id: string,
-    data: Partial<{
-      email: string;
-      nome: string;
-      telefone: string;
-      origem: string;
-      indicador: string;
-    }>
-  ): Promise<Prospeccao> {
+  async update(id: string, data: UpdateProspeccaoDTO): Promise<Prospeccao> {
     await this.findById(id);
 
     // Se está alterando o email, verifica duplicidade
     if (data.email) {
-      const existente = await prisma.prospeccao.findFirst({
-        where: {
-          email: data.email,
-          id: { not: id },
-        },
-      });
+      const existente = await prospeccaoRepository.findByEmail(data.email);
 
-      if (existente) {
+      if (existente && existente.id !== id) {
         throw new AppError('Email já cadastrado em outra prospecção', HTTP_STATUS.CONFLICT);
       }
     }
 
-    const prospeccao = await prisma.prospeccao.update({
-      where: { id },
-      data,
-    });
+    const prospeccao = await prospeccaoRepository.update(id, data);
 
     return prospeccao;
   }
@@ -183,9 +115,7 @@ class ProspeccaoService {
       );
     }
 
-    await prisma.prospeccao.delete({
-      where: { id },
-    });
+    await prospeccaoRepository.delete(id);
   }
 
   /**
@@ -194,10 +124,7 @@ class ProspeccaoService {
    */
   async converterParaUsuario(
     id: string,
-    dadosAdicionais?: {
-      telefone?: string;
-      indicador?: string;
-    }
+    dadosAdicionais?: ConversaoProspeccaoDTO
   ): Promise<{ prospeccao: Prospeccao; usuario: any }> {
     const prospeccao = await this.findById(id);
 
@@ -275,30 +202,25 @@ class ProspeccaoService {
     if (filters?.origem) where.origem = filters.origem;
     if (filters?.indicador) where.indicador = filters.indicador;
 
+    const repoFilters: ProspeccaoFilters = {
+      origem: filters?.origem,
+      indicador: filters?.indicador,
+    };
+
     const [total, convertidas, porOrigem, porIndicador] = await Promise.all([
-      prisma.prospeccao.count({ where }),
-      prisma.prospeccao.count({ where: { ...where, convertido: true } }),
-      prisma.prospeccao.groupBy({
-        by: ['origem'],
-        where,
-        _count: { id: true },
-      }),
-      prisma.prospeccao.groupBy({
-        by: ['indicador'],
-        where,
-        _count: { id: true },
-      }),
+      prospeccaoRepository.count(repoFilters),
+      prospeccaoRepository.count({ ...repoFilters, convertido: true }),
+      prospeccaoRepository.groupByOrigem(repoFilters),
+      prospeccaoRepository.groupByIndicador(repoFilters),
     ]);
 
     // Calcula conversões por origem
     const origemStats = await Promise.all(
       porOrigem.map(async (item) => {
-        const convertidas = await prisma.prospeccao.count({
-          where: {
-            ...where,
-            origem: item.origem,
-            convertido: true,
-          },
+        const convertidas = await prospeccaoRepository.count({
+          ...repoFilters,
+          origem: item.origem,
+          convertido: true,
         });
 
         return {
@@ -312,12 +234,10 @@ class ProspeccaoService {
     // Calcula conversões por indicador
     const indicadorStats = await Promise.all(
       porIndicador.map(async (item) => {
-        const convertidas = await prisma.prospeccao.count({
-          where: {
-            ...where,
-            indicador: item.indicador,
-            convertido: true,
-          },
+        const convertidas = await prospeccaoRepository.count({
+          ...repoFilters,
+          indicador: item.indicador,
+          convertido: true,
         });
 
         return {
@@ -345,17 +265,7 @@ class ProspeccaoService {
     origem?: string;
     indicador?: string;
   }): Promise<Prospeccao[]> {
-    const where: any = { convertido: false };
-
-    if (filters?.origem) where.origem = filters.origem;
-    if (filters?.indicador) where.indicador = filters.indicador;
-
-    const prospeccoes = await prisma.prospeccao.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return prospeccoes;
+    return prospeccaoRepository.findNaoConvertidas(filters);
   }
 }
 

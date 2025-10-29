@@ -1,19 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { usePagamentos } from '../hooks/usePagamentos';
-import { useUsuarios } from '../hooks/useUsuarios';
+import { usePagamentosLegacy as usePagamentos } from '../hooks/usePagamentos';
+import { useUsuariosLegacy as useUsuarios } from '../hooks/useUsuarios';
 import type { Pagamento, CreatePagamentoDTO, UpdatePagamentoDTO } from '../services/pagamentoService';
 import FilterBar from '../components/common/FilterBar';
 import Select from '../components/common/Select';
 import Button from '../components/common/Button';
 import SearchInput from '../components/common/SearchInput';
 import ExportButton from '../components/common/ExportButton';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import Alert from '../components/common/Alert';
 import PagamentosTable from '../components/pagamentos/PagamentosTable';
 import PagamentoForm from '../components/pagamentos/PagamentoForm';
 import DashboardPagamentos from '../components/pagamentos/DashboardPagamentos';
 import { useExport } from '../hooks/useExport';
 import { useListas } from '../hooks/useListas';
+import { TableSkeleton } from '../components/skeletons';
+import { toastCRUD, showAPIError } from '../utils/toast';
 
 const PagamentosPage: React.FC = () => {
   const { pagamentos, loading, error, fetchAll, create, update, remove } = usePagamentos();
@@ -105,8 +106,11 @@ const PagamentosPage: React.FC = () => {
 
   if (loading && pagamentos.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Pagamentos</h1>
+        </div>
+        <TableSkeleton rows={10} columns={8} />
       </div>
     );
   }
@@ -182,8 +186,13 @@ const PagamentosPage: React.FC = () => {
           onEdit={handleEditPagamento}
           onDelete={async (pagamento) => {
             if (confirm('Deseja realmente excluir este pagamento?')) {
-              await remove(pagamento.id);
-              fetchAll();
+              try {
+                await remove(pagamento.id);
+                toastCRUD.delete('Pagamento');
+                fetchAll();
+              } catch (error) {
+                showAPIError(error);
+              }
             }
           }}
         />
@@ -198,14 +207,20 @@ const PagamentosPage: React.FC = () => {
             setSelectedPagamento(null);
           }}
           onSave={async (data) => {
-            if (selectedPagamento) {
-              await update(selectedPagamento.id, data as UpdatePagamentoDTO);
-            } else {
-              await create(data as CreatePagamentoDTO);
+            try {
+              if (selectedPagamento) {
+                await update(selectedPagamento.id, data as UpdatePagamentoDTO);
+                toastCRUD.update('Pagamento');
+              } else {
+                await create(data as CreatePagamentoDTO);
+                toastCRUD.create('Pagamento');
+              }
+              setShowForm(false);
+              setSelectedPagamento(null);
+              fetchAll();
+            } catch (error) {
+              showAPIError(error);
             }
-            setShowForm(false);
-            setSelectedPagamento(null);
-            fetchAll();
           }}
         />
       )}

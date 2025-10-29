@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { usePagamentos } from '../hooks/usePagamentos';
+import { usePagamentosLegacy as usePagamentos } from '../hooks/usePagamentos';
 import { useDespesas } from '../hooks/useDespesas';
-import { useUsuarios } from '../hooks/useUsuarios';
+import { useUsuariosLegacy as useUsuarios } from '../hooks/useUsuarios';
 import { useChurn } from '../hooks/useChurn';
 import { useAgenda } from '../hooks/useAgenda';
 import { useComissoes } from '../hooks/useComissoes';

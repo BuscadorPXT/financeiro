@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Prospeccao } from '../../services/prospeccaoService';
-import { useUsuarios } from '../../hooks/useUsuarios';
+import { useUsuariosLegacy as useUsuarios } from '../../hooks/useUsuarios';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Alert from '../common/Alert';

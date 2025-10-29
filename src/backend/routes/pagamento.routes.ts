@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import pagamentoController from '../controllers/pagamentoController';
+import { validate } from '../middleware/validate';
+import { createPagamentoSchema, updatePagamentoSchema } from '../schemas/pagamento.schema';
+import { idParamSchema } from '../schemas/usuario.schema';
 
 const router = Router();
 
@@ -13,15 +16,15 @@ router.get('/relatorio/mensal', pagamentoController.getRelatorioMensal);
 router.get('/', pagamentoController.getAll);
 
 // GET /api/pagamentos/:id - Busca por ID
-router.get('/:id', pagamentoController.getById);
+router.get('/:id', validate(idParamSchema), pagamentoController.getById);
 
 // POST /api/pagamentos - Cria novo pagamento
-router.post('/', pagamentoController.create);
+router.post('/', validate(createPagamentoSchema), pagamentoController.create);
 
 // PUT /api/pagamentos/:id - Atualiza pagamento
-router.put('/:id', pagamentoController.update);
+router.put('/:id', validate(updatePagamentoSchema), pagamentoController.update);
 
 // DELETE /api/pagamentos/:id - Deleta pagamento
-router.delete('/:id', pagamentoController.delete);
+router.delete('/:id', validate(idParamSchema), pagamentoController.delete);
 
 export default router;

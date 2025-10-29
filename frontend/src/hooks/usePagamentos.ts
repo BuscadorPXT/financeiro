@@ -1,72 +1,121 @@
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * React Query hooks for Pagamento CRUD operations
+ */
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import pagamentoService from '../services/pagamentoService';
-import type { Pagamento, CreatePagamentoDTO, UpdatePagamentoDTO } from '../services/pagamentoService';
+import type { CreatePagamentoDTO, UpdatePagamentoDTO } from '../services/pagamentoService';
+import { usuarioKeys } from './useUsuarios';
 
-export const usePagamentos = () => {
-  const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// Query keys
+export const pagamentoKeys = {
+  all: ['pagamentos'] as const,
+  lists: () => [...pagamentoKeys.all, 'list'] as const,
+  list: (filters?: any) => [...pagamentoKeys.lists(), { filters }] as const,
+  details: () => [...pagamentoKeys.all, 'detail'] as const,
+  detail: (id: string) => [...pagamentoKeys.details(), id] as const,
+};
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await pagamentoService.getAll();
-      setPagamentos(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar pagamentos');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+/**
+ * Hook para buscar todos os pagamentos
+ */
+export function usePagamentos() {
+  return useQuery({
+    queryKey: pagamentoKeys.lists(),
+    queryFn: () => pagamentoService.getAll(),
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  });
+}
 
-  const create = useCallback(async (data: CreatePagamentoDTO) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const newPagamento = await pagamentoService.create(data);
-      setPagamentos(prev => [...prev, newPagamento]);
-      return newPagamento;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar pagamento');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+/**
+ * Hook para buscar um pagamento específico por ID
+ */
+export function usePagamento(id: string) {
+  return useQuery({
+    queryKey: pagamentoKeys.detail(id),
+    queryFn: () => pagamentoService.getById(id),
+    enabled: !!id,
+  });
+}
 
-  const update = useCallback(async (id: string, data: UpdatePagamentoDTO) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const updated = await pagamentoService.update(id, data);
-      setPagamentos(prev => prev.map(p => p.id === id ? updated : p));
-      return updated;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar pagamento');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+/**
+ * Hook para criar novo pagamento
+ * - Invalida cache de pagamentos E usuários (pois pagamento afeta usuário)
+ */
+export function useCreatePagamento() {
+  const queryClient = useQueryClient();
 
-  const remove = useCallback(async (id: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await pagamentoService.delete(id);
-      setPagamentos(prev => prev.filter(p => p.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao deletar pagamento');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  return useMutation({
+    mutationFn: (data: CreatePagamentoDTO) => pagamentoService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pagamentoKeys.lists() });
+      // Invalida usuários também pois pagamento afeta dados do usuário
+      queryClient.invalidateQueries({ queryKey: usuarioKeys.lists() });
+    },
+  });
+}
 
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+/**
+ * Hook para atualizar pagamento
+ */
+export function useUpdatePagamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdatePagamentoDTO }) =>
+      pagamentoService.update(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: pagamentoKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: pagamentoKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: usuarioKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook para deletar pagamento
+ */
+export function useDeletePagamento() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => pagamentoService.delete(id),
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: pagamentoKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: pagamentoKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: usuarioKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook legado para compatibilidade com código existente
+ * @deprecated
+ */
+export const usePagamentosLegacy = () => {
+  const { data: pagamentos = [], isLoading: loading, error: queryError } = usePagamentos();
+  const createMutation = useCreatePagamento();
+  const updateMutation = useUpdatePagamento();
+  const deleteMutation = useDeletePagamento();
+  const queryClient = useQueryClient();
+
+  const fetchAll = async () => {
+    await queryClient.invalidateQueries({ queryKey: pagamentoKeys.lists() });
+  };
+
+  const create = async (data: CreatePagamentoDTO) => {
+    return createMutation.mutateAsync(data);
+  };
+
+  const update = async (id: string, data: UpdatePagamentoDTO) => {
+    return updateMutation.mutateAsync({ id, data });
+  };
+
+  const remove = async (id: string) => {
+    return deleteMutation.mutateAsync(id);
+  };
+
+  const error = queryError ? String(queryError) : null;
 
   return {
     pagamentos,
@@ -75,6 +124,6 @@ export const usePagamentos = () => {
     fetchAll,
     create,
     update,
-    remove
+    remove,
   };
 };

@@ -19,7 +19,7 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaCh
 import relatorioService from '../services/relatorioService';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import clsx from 'clsx';
-import { usePagamentos } from '../hooks/usePagamentos';
+import { usePagamentosLegacy as usePagamentos } from '../hooks/usePagamentos';
 import { useDespesas } from '../hooks/useDespesas';
 
 interface DashboardData {

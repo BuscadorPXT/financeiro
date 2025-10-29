@@ -1,6 +1,6 @@
 import prisma from '../../database/client';
 import { TipoLista, ListaAuxiliar } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 
 class ListaService {

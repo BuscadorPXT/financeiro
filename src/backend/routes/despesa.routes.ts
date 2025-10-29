@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import despesaController from '../controllers/despesaController';
+import { validate } from '../middleware/validate';
+import { createDespesaSchema, updateDespesaSchema } from '../schemas/despesa.schema';
+import { idParamSchema } from '../schemas/usuario.schema';
 
 const router = Router();
 
@@ -16,21 +19,21 @@ router.get('/relatorio/mensal', despesaController.getRelatorioMensal);
 router.get('/', despesaController.getAll);
 
 // GET /api/despesas/:id - Busca por ID
-router.get('/:id', despesaController.getById);
+router.get('/:id', validate(idParamSchema), despesaController.getById);
 
 // POST /api/despesas - Cria nova despesa
-router.post('/', despesaController.create);
+router.post('/', validate(createDespesaSchema), despesaController.create);
 
 // PUT /api/despesas/:id - Atualiza despesa
-router.put('/:id', despesaController.update);
+router.put('/:id', validate(updateDespesaSchema), despesaController.update);
 
 // PUT /api/despesas/:id/pagar - Marca como paga
-router.put('/:id/pagar', despesaController.marcarComoPaga);
+router.put('/:id/pagar', validate(idParamSchema), despesaController.marcarComoPaga);
 
 // PUT /api/despesas/:id/pendente - Marca como pendente
-router.put('/:id/pendente', despesaController.marcarComoPendente);
+router.put('/:id/pendente', validate(idParamSchema), despesaController.marcarComoPendente);
 
 // DELETE /api/despesas/:id - Deleta despesa
-router.delete('/:id', despesaController.delete);
+router.delete('/:id', validate(idParamSchema), despesaController.delete);
 
 export default router;

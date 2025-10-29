@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Pagamento, CreatePagamentoDTO, UpdatePagamentoDTO } from '../../services/pagamentoService';
-import { useUsuarios } from '../../hooks/useUsuarios';
+import { useUsuariosLegacy as useUsuarios } from '../../hooks/useUsuarios';
 import { useListas } from '../../hooks/useListas';
 import Modal from '../common/Modal';
 import FormInput from '../common/FormInput';

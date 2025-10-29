@@ -4,6 +4,7 @@ import StatusBadge from '../common/StatusBadge';
 import Button from '../common/Button';
 import { formatDate } from '../../utils/formatters';
 import { usePagination } from '../../hooks/usePagination';
+import { ResponsiveTable, type Column } from '../common/ResponsiveTable';
 
 interface UsuariosTableProps {
   usuarios: Usuario[];
@@ -90,132 +91,152 @@ const UsuariosTable: React.FC<UsuariosTableProps> = ({
     return 'text-green-600';
   };
 
+  // Define columns for ResponsiveTable
+  const columns: Column<Usuario>[] = [
+    {
+      key: 'emailLogin',
+      label: 'Email',
+      render: (usuario) => <span className="break-words">{usuario.emailLogin}</span>,
+    },
+    {
+      key: 'nomeCompleto',
+      label: 'Nome',
+      render: (usuario) => <span className="break-words">{usuario.nomeCompleto}</span>,
+    },
+    {
+      key: 'telefone',
+      label: 'Telefone',
+      render: (usuario) => usuario.telefone || '-',
+      hideOnMobile: true,
+    },
+    {
+      key: 'indicador',
+      label: 'Indicador',
+      render: (usuario) => usuario.indicador || '-',
+      hideOnMobile: true,
+    },
+    {
+      key: 'statusFinal',
+      label: 'Status',
+      render: (usuario) => (
+        <StatusBadge
+          status={usuario.statusFinal}
+          variant={getStatusColor(usuario.statusFinal)}
+        />
+      ),
+    },
+    {
+      key: 'metodo',
+      label: 'Método',
+      render: (usuario) => usuario.metodo || '-',
+      hideOnMobile: true,
+    },
+    {
+      key: 'conta',
+      label: 'Conta',
+      render: (usuario) => usuario.conta || '-',
+      hideOnMobile: true,
+    },
+    {
+      key: 'ciclo',
+      label: 'Ciclo',
+      render: (usuario) => <span className="font-semibold">{usuario.ciclo}</span>,
+    },
+    {
+      key: 'dataVenc',
+      label: 'Vencimento',
+      render: (usuario) => (usuario.dataVenc ? formatDate(usuario.dataVenc) : '-'),
+      hideOnMobile: true,
+    },
+    {
+      key: 'diasParaVencer',
+      label: 'Dias p/ Vencer',
+      render: (usuario) => (
+        <span className={getDiasParaVencerColor(usuario.diasParaVencer)}>
+          {usuario.diasParaVencer !== null && usuario.diasParaVencer !== undefined
+            ? `${usuario.diasParaVencer} dias`
+            : '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'flagAgenda',
+      label: 'Agenda',
+      render: (usuario) => (
+        <input
+          type="checkbox"
+          checked={usuario.flagAgenda}
+          onChange={() => onToggleAgenda(usuario)}
+          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+        />
+      ),
+      hideOnMobile: true,
+    },
+    {
+      key: 'actions',
+      label: 'Ações',
+      render: (usuario) => (
+        <div className="flex gap-2 justify-end items-center flex-wrap">
+          <Button size="sm" variant="secondary" onClick={() => onPagamentoRapido(usuario)}>
+            💰 Pagar
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => onVerHistorico(usuario)}>
+            📋
+          </Button>
+          <Button size="sm" onClick={() => onEdit(usuario)}>
+            ✏️
+          </Button>
+          <Button size="sm" variant="danger" onClick={() => onDelete(usuario)}>
+            🗑️
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div>
-      <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 350px)' }}>
-        <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1800px' }}>
-          <thead className="bg-[var(--bg-secondary)] sticky top-0 z-10">
-            <tr>
-              <th
-                onClick={() => handleSort('emailLogin')}
-                className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                style={{ minWidth: '220px' }}
-              >
-                Email {sortKey === 'emailLogin' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th
-                onClick={() => handleSort('nomeCompleto')}
-                className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                style={{ minWidth: '200px' }}
-              >
-                Nome {sortKey === 'nomeCompleto' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
-                style={{ minWidth: '140px' }}>
-                Telefone
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
-                style={{ minWidth: '150px' }}>
-                Indicador
-              </th>
-              <th
-                onClick={() => handleSort('statusFinal')}
-                className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                style={{ minWidth: '120px' }}
-              >
-                Status {sortKey === 'statusFinal' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
-                style={{ minWidth: '140px' }}>
-                Método
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
-                style={{ minWidth: '140px' }}>
-                Conta
-              </th>
-              <th
-                onClick={() => handleSort('ciclo')}
-                className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                style={{ minWidth: '80px' }}
-              >
-                Ciclo {sortKey === 'ciclo' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
-                style={{ minWidth: '130px' }}>
-                Vencimento
-              </th>
-              <th
-                onClick={() => handleSort('diasParaVencer')}
-                className="px-4 py-4 text-left text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:bg-[var(--bg-tertiary)]"
-                style={{ minWidth: '140px' }}
-              >
-                Dias p/ Vencer {sortKey === 'diasParaVencer' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
-                style={{ minWidth: '90px' }}>
-                Agenda
-              </th>
-              <th className="px-4 py-4 text-right text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
-                style={{ minWidth: '250px' }}>
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-[var(--bg-primary)] divide-y divide-gray-200">
-            {paginatedData.map((usuario) => (
-              <tr key={usuario.id} className="hover:bg-[var(--bg-secondary)]">
-                <td className="px-4 py-5 text-sm text-[var(--text-primary)] whitespace-normal break-words">{usuario.emailLogin}</td>
-                <td className="px-4 py-5 text-sm text-[var(--text-primary)] whitespace-normal break-words">{usuario.nomeCompleto}</td>
-                <td className="px-4 py-5 text-sm text-[var(--text-secondary)] whitespace-nowrap">{usuario.telefone || '-'}</td>
-                <td className="px-4 py-5 text-sm text-[var(--text-secondary)] whitespace-normal break-words">{usuario.indicador || '-'}</td>
-                <td className="px-4 py-5 text-sm">
-                  <StatusBadge
-                    status={usuario.statusFinal}
-                    variant={getStatusColor(usuario.statusFinal)}
-                  />
-                </td>
-                <td className="px-4 py-5 text-sm text-[var(--text-secondary)] whitespace-nowrap">{usuario.metodo || '-'}</td>
-                <td className="px-4 py-5 text-sm text-[var(--text-secondary)] whitespace-nowrap">{usuario.conta || '-'}</td>
-                <td className="px-4 py-5 text-sm text-[var(--text-primary)] text-center font-semibold">
-                  {usuario.ciclo}
-                </td>
-                <td className="px-4 py-5 text-sm text-[var(--text-secondary)] whitespace-nowrap">
-                  {usuario.dataVenc ? formatDate(usuario.dataVenc) : '-'}
-                </td>
-                <td className={`px-4 py-5 text-sm whitespace-nowrap ${getDiasParaVencerColor(usuario.diasParaVencer)}`}>
-                  {usuario.diasParaVencer !== null && usuario.diasParaVencer !== undefined
-                    ? `${usuario.diasParaVencer} dias`
-                    : '-'}
-                </td>
-                <td className="px-4 py-5 text-center">
-                  <input
-                    type="checkbox"
-                    checked={usuario.flagAgenda}
-                    onChange={() => onToggleAgenda(usuario)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                </td>
-                <td className="px-4 py-5 text-right text-sm">
-                  <div className="flex gap-2 justify-end items-center whitespace-nowrap">
-                    <Button size="sm" variant="secondary" onClick={() => onPagamentoRapido(usuario)}>
-                      💰 Pagar
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => onVerHistorico(usuario)}>
-                      📋
-                    </Button>
-                    <Button size="sm" onClick={() => onEdit(usuario)}>
-                      ✏️
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => onDelete(usuario)}>
-                      🗑️
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Sorting Controls */}
+      <div className="bg-[var(--bg-secondary)] px-4 py-3 border-b border-[var(--border-color)] flex gap-2 flex-wrap">
+        <span className="text-sm text-[var(--text-secondary)] font-medium">Ordenar por:</span>
+        <button
+          onClick={() => handleSort('nomeCompleto')}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Nome {sortKey === 'nomeCompleto' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </button>
+        <button
+          onClick={() => handleSort('emailLogin')}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Email {sortKey === 'emailLogin' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </button>
+        <button
+          onClick={() => handleSort('statusFinal')}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Status {sortKey === 'statusFinal' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </button>
+        <button
+          onClick={() => handleSort('ciclo')}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Ciclo {sortKey === 'ciclo' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </button>
+        <button
+          onClick={() => handleSort('diasParaVencer')}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Dias p/ Vencer {sortKey === 'diasParaVencer' && (sortOrder === 'asc' ? '↑' : '↓')}
+        </button>
       </div>
+
+      <ResponsiveTable
+        data={paginatedData}
+        columns={columns}
+        keyExtractor={(usuario) => usuario.id.toString()}
+        emptyMessage="Nenhum usuário encontrado"
+      />
 
       {/* Paginação */}
       {totalPages > 1 && (

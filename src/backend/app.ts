@@ -3,6 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { errorHandler } from './middleware/errorHandler';
+import { globalLimiter } from './middleware/rateLimiter';
+import { requestLogger } from './middleware/requestLogger';
+import logger from './config/logger';
 import routes from './routes';
 
 // Load environment variables
@@ -25,7 +28,16 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
+// Request logging (Winston)
+app.use(requestLogger);
+
+// Log application startup
+logger.info('Financeiro API iniciado', {
+  environment: process.env.NODE_ENV || 'development',
+  nodeVersion: process.version,
+});
+
+// Health check endpoint (sem rate limiting)
 app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
@@ -33,6 +45,10 @@ app.get('/health', (_req, res) => {
     environment: process.env.NODE_ENV || 'development',
   });
 });
+
+// Rate limiting global para todas as rotas /api/*
+// Limite: 100 requisições por 15 minutos por IP
+app.use('/api', globalLimiter);
 
 // API routes
 app.use('/api', routes);

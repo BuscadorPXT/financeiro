@@ -1,10 +1,12 @@
 import prisma from '../../database/client';
 import { Agenda, StatusAgenda, StatusFinal, RegraTipo, MetodoPagamento } from '@prisma/client';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../errors';
 import { HTTP_STATUS } from '../../shared/constants';
 import { PaginationParams, PaginatedResponse, FilterParams } from '../../shared/types';
 import { calcularDiasParaVencer } from '../utils/dateUtils';
 import pagamentoService from './pagamentoService';
+import agendaRepository, { AgendaFilters } from '../repositories/AgendaRepository';
+import { CreateAgendaDTO, UpdateAgendaDTO } from '../dtos';
 
 class AgendaService {
   /**
@@ -18,68 +20,21 @@ class AgendaService {
     const limit = pagination?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-
-    // Filtros
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-
-    if (filters?.usuarioId) {
-      where.usuarioId = filters.usuarioId;
-    }
-
-    if (filters?.renovou !== undefined) {
-      where.renovou = filters.renovou === 'true' || filters.renovou === true;
-    }
-
-    if (filters?.cancelou !== undefined) {
-      where.cancelou = filters.cancelou === 'true' || filters.cancelou === true;
-    }
-
-    // Filtros por janela de vencimento
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    if (filters?.janela === 'vencidos') {
-      where.dataVenc = { lt: hoje };
-      where.status = StatusAgenda.ATIVO;
-    } else if (filters?.janela === 'hoje') {
-      const amanha = new Date(hoje);
-      amanha.setDate(amanha.getDate() + 1);
-      where.dataVenc = { gte: hoje, lt: amanha };
-      where.status = StatusAgenda.ATIVO;
-    } else if (filters?.janela === 'proximos7dias') {
-      const seteDias = new Date(hoje);
-      seteDias.setDate(seteDias.getDate() + 7);
-      where.dataVenc = { gte: hoje, lte: seteDias };
-      where.status = StatusAgenda.ATIVO;
-    } else if (filters?.janela === 'mesAtual') {
-      const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-      const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-      where.dataVenc = { gte: primeiroDia, lte: ultimoDia };
-      where.status = StatusAgenda.ATIVO;
-    }
+    const repoFilters: AgendaFilters = {
+      status: filters?.status as StatusAgenda | undefined,
+      usuarioId: filters?.usuarioId,
+      renovou: filters?.renovou !== undefined
+        ? filters.renovou === 'true' || filters.renovou === true
+        : undefined,
+      cancelou: filters?.cancelou !== undefined
+        ? filters.cancelou === 'true' || filters.cancelou === true
+        : undefined,
+      janela: filters?.janela as 'vencidos' | 'hoje' | 'proximos7dias' | 'mesAtual' | undefined,
+    };
 
     const [data, total] = await Promise.all([
-      prisma.agenda.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { dataVenc: 'asc' },
-        include: {
-          usuario: {
-            select: {
-              id: true,
-              emailLogin: true,
-              nomeCompleto: true,
-              telefone: true,
-              statusFinal: true,
-            },
-          },
-        },
-      }),
-      prisma.agenda.count({ where }),
+      agendaRepository.findMany(repoFilters, { skip, take: limit }),
+      agendaRepository.count(repoFilters),
     ]);
 
     return {
@@ -97,12 +52,7 @@ class AgendaService {
    * Busca um item da agenda por ID
    */
   async findById(id: string): Promise<Agenda> {
-    const agenda = await prisma.agenda.findUnique({
-      where: { id },
-      include: {
-        usuario: true,
-      },
-    });
+    const agenda = await agendaRepository.findById(id);
 
     if (!agenda) {
       throw new AppError('Item da agenda não encontrado', HTTP_STATUS.NOT_FOUND);
@@ -114,12 +64,7 @@ class AgendaService {
   /**
    * Cria um novo item na agenda
    */
-  async create(data: {
-    usuarioId: string;
-    dataVenc: Date;
-    ciclo: number;
-    status?: StatusAgenda;
-  }): Promise<Agenda> {
+  async create(data: CreateAgendaDTO): Promise<Agenda> {
     // Busca o usuário
     const usuario = await prisma.usuario.findUnique({
       where: { id: data.usuarioId },
@@ -131,14 +76,14 @@ class AgendaService {
 
     const diasParaVencer = calcularDiasParaVencer(data.dataVenc);
 
-    const agenda = await prisma.agenda.create({
-      data: {
-        usuarioId: data.usuarioId,
-        dataVenc: data.dataVenc,
-        diasParaVencer,
-        ciclo: data.ciclo,
-        status: data.status || StatusAgenda.ATIVO,
+    const agenda = await agendaRepository.create({
+      usuario: {
+        connect: { id: data.usuarioId },
       },
+      dataVenc: data.dataVenc,
+      diasParaVencer,
+      ciclo: data.ciclo,
+      status: data.status || StatusAgenda.ATIVO,
     });
 
     return agenda;
@@ -147,14 +92,7 @@ class AgendaService {
   /**
    * Atualiza um item da agenda
    */
-  async update(
-    id: string,
-    data: Partial<{
-      dataVenc: Date;
-      status: StatusAgenda;
-      ciclo: number;
-    }>
-  ): Promise<Agenda> {
+  async update(id: string, data: UpdateAgendaDTO): Promise<Agenda> {
     await this.findById(id);
 
     // Se a data mudou, recalcula dias para vencer
@@ -163,10 +101,7 @@ class AgendaService {
       (data as any).diasParaVencer = diasParaVencer;
     }
 
-    const agenda = await prisma.agenda.update({
-      where: { id },
-      data,
-    });
+    const agenda = await agendaRepository.update(id, data);
 
     return agenda;
   }
@@ -177,9 +112,7 @@ class AgendaService {
   async delete(id: string): Promise<void> {
     await this.findById(id);
 
-    await prisma.agenda.delete({
-      where: { id },
-    });
+    await agendaRepository.delete(id);
   }
 
   /**
@@ -224,12 +157,9 @@ class AgendaService {
     });
 
     // Marca como renovado
-    const agendaAtualizada = await prisma.agenda.update({
-      where: { id },
-      data: {
-        renovou: true,
-        cancelou: false,
-      },
+    const agendaAtualizada = await agendaRepository.update(id, {
+      renovou: true,
+      cancelou: false,
     });
 
     return {
@@ -279,13 +209,10 @@ class AgendaService {
     });
 
     // Marca como cancelado
-    const agendaAtualizada = await prisma.agenda.update({
-      where: { id },
-      data: {
-        cancelou: true,
-        renovou: false,
-        status: StatusAgenda.INATIVO,
-      },
+    const agendaAtualizada = await agendaRepository.update(id, {
+      cancelou: true,
+      renovou: false,
+      status: StatusAgenda.INATIVO,
     });
 
     return {
@@ -304,11 +231,8 @@ class AgendaService {
       throw new AppError('Este item não foi marcado como renovado', HTTP_STATUS.BAD_REQUEST);
     }
 
-    const agendaAtualizada = await prisma.agenda.update({
-      where: { id },
-      data: {
-        renovou: false,
-      },
+    const agendaAtualizada = await agendaRepository.update(id, {
+      renovou: false,
     });
 
     return agendaAtualizada;
@@ -324,12 +248,9 @@ class AgendaService {
       throw new AppError('Este item não foi marcado como cancelado', HTTP_STATUS.BAD_REQUEST);
     }
 
-    const agendaAtualizada = await prisma.agenda.update({
-      where: { id },
-      data: {
-        cancelou: false,
-        status: StatusAgenda.ATIVO,
-      },
+    const agendaAtualizada = await agendaRepository.update(id, {
+      cancelou: false,
+      status: StatusAgenda.ATIVO,
     });
 
     return agendaAtualizada;
@@ -368,21 +289,13 @@ class AgendaService {
       renovados,
       cancelados,
     ] = await Promise.all([
-      prisma.agenda.count({ where: { status: StatusAgenda.ATIVO } }),
-      prisma.agenda.count({
-        where: { dataVenc: { lt: hoje }, status: StatusAgenda.ATIVO },
-      }),
-      prisma.agenda.count({
-        where: { dataVenc: { gte: hoje, lt: amanha }, status: StatusAgenda.ATIVO },
-      }),
-      prisma.agenda.count({
-        where: { dataVenc: { gte: hoje, lte: seteDias }, status: StatusAgenda.ATIVO },
-      }),
-      prisma.agenda.count({
-        where: { dataVenc: { gte: primeiroDia, lte: ultimoDia }, status: StatusAgenda.ATIVO },
-      }),
-      prisma.agenda.count({ where: { renovou: true } }),
-      prisma.agenda.count({ where: { cancelou: true } }),
+      agendaRepository.count({ status: StatusAgenda.ATIVO }),
+      agendaRepository.count({ janela: 'vencidos' }),
+      agendaRepository.count({ janela: 'hoje' }),
+      agendaRepository.count({ janela: 'proximos7dias' }),
+      agendaRepository.count({ janela: 'mesAtual' }),
+      agendaRepository.count({ renovou: true }),
+      agendaRepository.count({ cancelou: true }),
     ]);
 
     return {
@@ -400,9 +313,7 @@ class AgendaService {
    * Atualiza dias para vencer de todos os itens ativos
    */
   async atualizarDiasParaVencer(): Promise<number> {
-    const itensAtivos = await prisma.agenda.findMany({
-      where: { status: StatusAgenda.ATIVO },
-    });
+    const itensAtivos = await agendaRepository.findAtivos();
 
     let atualizados = 0;
 
@@ -410,10 +321,7 @@ class AgendaService {
       const diasParaVencer = calcularDiasParaVencer(item.dataVenc);
 
       if (diasParaVencer !== item.diasParaVencer) {
-        await prisma.agenda.update({
-          where: { id: item.id },
-          data: { diasParaVencer },
-        });
+        await agendaRepository.update(item.id, { diasParaVencer });
         atualizados++;
       }
     }
@@ -453,14 +361,7 @@ class AgendaService {
       if (!usuario.dataVenc) continue;
 
       // Verificar se já existe na agenda ativo e não processado
-      const existeNaAgenda = await prisma.agenda.findFirst({
-        where: {
-          usuarioId: usuario.id,
-          status: StatusAgenda.ATIVO,
-          renovou: false,
-          cancelou: false,
-        },
-      });
+      const existeNaAgenda = await agendaRepository.findFirstAtivoByUsuarioId(usuario.id);
 
       const diasParaVencer = calcularDiasParaVencer(usuario.dataVenc);
 
@@ -471,26 +372,23 @@ class AgendaService {
           existeNaAgenda.diasParaVencer !== diasParaVencer ||
           existeNaAgenda.ciclo !== usuario.ciclo
         ) {
-          await prisma.agenda.update({
-            where: { id: existeNaAgenda.id },
-            data: {
-              dataVenc: usuario.dataVenc,
-              diasParaVencer,
-              ciclo: usuario.ciclo || 0,
-            },
+          await agendaRepository.update(existeNaAgenda.id, {
+            dataVenc: usuario.dataVenc,
+            diasParaVencer,
+            ciclo: usuario.ciclo || 0,
           });
           atualizados++;
         }
       } else {
         // Adicionar à agenda
-        await prisma.agenda.create({
-          data: {
-            usuarioId: usuario.id,
-            dataVenc: usuario.dataVenc,
-            diasParaVencer,
-            status: StatusAgenda.ATIVO,
-            ciclo: usuario.ciclo || 0,
+        await agendaRepository.create({
+          usuario: {
+            connect: { id: usuario.id },
           },
+          dataVenc: usuario.dataVenc,
+          diasParaVencer,
+          status: StatusAgenda.ATIVO,
+          ciclo: usuario.ciclo || 0,
         });
         adicionados++;
       }

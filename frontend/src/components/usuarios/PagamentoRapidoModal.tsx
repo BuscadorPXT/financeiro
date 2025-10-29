@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Usuario } from '../../services/usuarioService';
 import type { CreatePagamentoDTO } from '../../services/pagamentoService';
-import { usePagamentos } from '../../hooks/usePagamentos';
+import { usePagamentosLegacy as usePagamentos } from '../../hooks/usePagamentos';
 import { useListas } from '../../hooks/useListas';
 import Modal from '../common/Modal';
 import FormInput from '../common/FormInput';

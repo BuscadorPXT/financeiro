@@ -29,10 +29,16 @@ class AuthController {
 
   /**
    * POST /api/auth/logout
-   * Invalida o token (opcional - pode ser feito apenas no frontend)
+   * Invalida o token adicionando à blacklist
    */
-  logout = catchAsync(async (_req: Request, res: Response) => {
-    // Implementar se necessário blacklist de tokens
+  logout = catchAsync(async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      await authService.logout(token);
+    }
+
     return res.status(HTTP_STATUS.OK).json({
       status: 'success',
       message: 'Logout realizado com sucesso',

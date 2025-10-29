@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useChurn } from '../hooks/useChurn';
-import { useUsuarios } from '../hooks/useUsuarios';
+import { useUsuariosLegacy as useUsuarios } from '../hooks/useUsuarios';
 import { useListas } from '../hooks/useListas';
 import type { Churn as ChurnType } from '../services/churnService';
 import FilterBar from '../components/common/FilterBar';
