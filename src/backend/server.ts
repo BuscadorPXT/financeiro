@@ -1,7 +1,6 @@
 import app from './app';
 import prisma from '../database/client';
 import { executarImportacaoAutomatica } from './services/autoImportService';
-import { executarJob } from './jobs/atualizarFlags';
 
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || 'localhost';
@@ -24,7 +23,12 @@ const server = app.listen(PORT, async () => {
   // Atualizar flags e agenda no startup
   try {
     console.log('\n🔄 Atualizando flags de vencimento...');
-    await executarJob();
+    const { atualizarFlagsUsuarios, atualizarFlagsAgenda, sincronizarAgenda } = await import('./jobs/atualizarFlags');
+
+    await atualizarFlagsUsuarios();
+    await atualizarFlagsAgenda();
+    await sincronizarAgenda();
+
     console.log('✅ Flags atualizadas com sucesso!\n');
   } catch (error) {
     console.error('❌ Falha na atualização de flags:', error);
