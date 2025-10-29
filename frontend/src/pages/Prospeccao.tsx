@@ -9,6 +9,7 @@ import ExportButton from '../components/common/ExportButton';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Alert from '../components/common/Alert';
 import ProspeccaoTable from '../components/prospeccao/ProspeccaoTable';
+import ProspeccaoCardList from '../components/prospeccao/ProspeccaoCardList';
 import ProspeccaoForm from '../components/prospeccao/ProspeccaoForm';
 import ConversaoModal from '../components/prospeccao/ConversaoModal';
 import { useExport } from '../hooks/useExport';
@@ -29,6 +30,11 @@ const ProspeccaoPage: React.FC = () => {
   const [filtroConversao, setFiltroConversao] = useState<string>('todos'); // todos, convertidos, pendentes
   const [filtroOrigem, setFiltroOrigem] = useState<string>('');
   const [filtroIndicador, setFiltroIndicador] = useState<string>('');
+
+  // Estados de visualização
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [sortKey, setSortKey] = useState<keyof ProspeccaoType>('nome');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Listas auxiliares
   const indicadores = useMemo(
@@ -86,6 +92,15 @@ const ProspeccaoPage: React.FC = () => {
     setFiltroConversao('todos');
     setFiltroOrigem('');
     setFiltroIndicador('');
+  };
+
+  const handleSort = (key: keyof ProspeccaoType) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
   };
 
   const handleCreate = () => {
@@ -161,6 +176,22 @@ const ProspeccaoPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Prospecção de Leads</h1>
         <div className="flex gap-3">
+          <Button
+            size="sm"
+            variant={viewMode === 'cards' ? 'primary' : 'secondary'}
+            onClick={() => setViewMode('cards')}
+            title="Visualização em Cards"
+          >
+            ⊞ Cards
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'table' ? 'primary' : 'secondary'}
+            onClick={() => setViewMode('table')}
+            title="Visualização em Tabela"
+          >
+            ☰ Tabela
+          </Button>
           <Button onClick={handleCreate}>+ Novo Lead</Button>
           <ExportButton onExport={handleExport} />
         </div>
@@ -258,12 +289,24 @@ const ProspeccaoPage: React.FC = () => {
           </p>
         </div>
 
-        <ProspeccaoTable
-          prospeccao={filteredProspeccao}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onConverter={handleConverter}
-        />
+        {viewMode === 'cards' ? (
+          <ProspeccaoCardList
+            prospeccao={filteredProspeccao}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onConverter={handleConverter}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+          />
+        ) : (
+          <ProspeccaoTable
+            prospeccao={filteredProspeccao}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onConverter={handleConverter}
+          />
+        )}
       </div>
 
       {/* Modal de Formulário */}

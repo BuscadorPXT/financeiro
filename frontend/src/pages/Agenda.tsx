@@ -9,6 +9,7 @@ import ExportButton from '../components/common/ExportButton';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Alert from '../components/common/Alert';
 import AgendaTable from '../components/agenda/AgendaTable';
+import AgendaCardList from '../components/agenda/AgendaCardList';
 import DashboardAgenda from '../components/agenda/DashboardAgenda';
 import RenovacaoModal from '../components/agenda/RenovacaoModal';
 import { useExport } from '../hooks/useExport';
@@ -21,6 +22,11 @@ const AgendaPage: React.FC = () => {
   // Estados de filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroRapido, setFiltroRapido] = useState<string>('todos');
+
+  // Estados de visualização
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [sortKey, setSortKey] = useState<keyof AgendaType>('diasParaVencer');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Estado do modal de renovação
   const [renovacaoModal, setRenovacaoModal] = useState<{ isOpen: boolean; item: AgendaType | null }>({
@@ -69,6 +75,15 @@ const AgendaPage: React.FC = () => {
   const handleClearFilters = () => {
     setSearchTerm('');
     setFiltroRapido('todos');
+  };
+
+  const handleSort = (key: keyof AgendaType) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
   };
 
   const handleRenovar = (item: AgendaType) => {
@@ -129,6 +144,22 @@ const AgendaPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Agenda de Renovações</h1>
         <div className="flex gap-3">
+          <Button
+            size="sm"
+            variant={viewMode === 'cards' ? 'primary' : 'secondary'}
+            onClick={() => setViewMode('cards')}
+            title="Visualização em Cards"
+          >
+            ⊞ Cards
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'table' ? 'primary' : 'secondary'}
+            onClick={() => setViewMode('table')}
+            title="Visualização em Tabela"
+          >
+            ☰ Tabela
+          </Button>
           <ExportButton onExport={handleExport} />
         </div>
       </div>
@@ -206,12 +237,24 @@ const AgendaPage: React.FC = () => {
           </p>
         </div>
 
-        <AgendaTable
-          agenda={filteredAgenda}
-          usuarios={usuarios}
-          onRenovar={handleRenovar}
-          onCancelar={handleCancelar}
-        />
+        {viewMode === 'cards' ? (
+          <AgendaCardList
+            agenda={filteredAgenda}
+            usuarios={usuarios}
+            onRenovar={handleRenovar}
+            onCancelar={handleCancelar}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+          />
+        ) : (
+          <AgendaTable
+            agenda={filteredAgenda}
+            usuarios={usuarios}
+            onRenovar={handleRenovar}
+            onCancelar={handleCancelar}
+          />
+        )}
       </div>
 
       {/* Modal de Renovação */}
