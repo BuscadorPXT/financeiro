@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { Usuario } from '../../services/usuarioService';
 import UsuarioCard from './UsuarioCard';
 import Button from '../common/Button';
