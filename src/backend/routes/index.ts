@@ -9,6 +9,7 @@ import churnRoutes from './churn.routes';
 import comissaoRoutes from './comissao.routes';
 import prospeccaoRoutes from './prospeccao.routes';
 import relatorioRoutes from './relatorio.routes';
+import adminRoutes from './admin.routes';
 import { authenticate } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -22,6 +23,7 @@ router.get('/', (_req, res) => {
       health: '/health',
       api: '/api',
       auth: '/api/auth',
+      admin: '/api/admin',
       listas: '/api/listas',
       usuarios: '/api/usuarios',
       pagamentos: '/api/pagamentos',
@@ -37,6 +39,9 @@ router.get('/', (_req, res) => {
 
 // Rotas de autenticação (públicas)
 router.use('/auth', authRoutes);
+
+// Rotas admin (protegidas por senha custom)
+router.use('/admin', adminRoutes);
 
 // TODAS as outras rotas protegidas por autenticação
 router.use('/listas', authenticate, listaRoutes);
