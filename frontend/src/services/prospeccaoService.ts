@@ -7,6 +7,7 @@ export interface Prospeccao {
   telefone?: string;
   origem?: string;
   indicador?: string;
+  observacao?: string;
   convertido: boolean;
   usuario_id?: number;
   created_at: string;
@@ -19,6 +20,7 @@ export interface CreateProspeccaoDTO {
   telefone?: string;
   origem?: string;
   indicador?: string;
+  observacao?: string;
 }
 
 export interface UpdateProspeccaoDTO {
@@ -27,6 +29,7 @@ export interface UpdateProspeccaoDTO {
   telefone?: string;
   origem?: string;
   indicador?: string;
+  observacao?: string;
 }
 
 export interface ConvertProspeccaoDTO {
