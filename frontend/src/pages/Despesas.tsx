@@ -9,6 +9,7 @@ import ExportButton from '../components/common/ExportButton';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Alert from '../components/common/Alert';
 import DespesasTable from '../components/despesas/DespesasTable';
+import DespesaCardList from '../components/despesas/DespesaCardList';
 import DespesaForm from '../components/despesas/DespesaForm';
 import DashboardDespesas from '../components/despesas/DashboardDespesas';
 import { useExport } from '../hooks/useExport';
@@ -25,6 +26,13 @@ const DespesasPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [mesFilter, setMesFilter] = useState<number>(0);
   const [anoFilter, setAnoFilter] = useState<number>(0);
+
+  // Estado de visualização
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
+  // Estados de ordenação
+  const [sortKey, setSortKey] = useState<keyof Despesa>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Estados de modais
   const [showForm, setShowForm] = useState(false);
@@ -63,6 +71,15 @@ const DespesasPage: React.FC = () => {
     setStatusFilter('');
     setMesFilter(0);
     setAnoFilter(0);
+  };
+
+  const handleSort = (key: keyof Despesa) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
   };
 
   const handleNovaDespesa = () => {
@@ -108,6 +125,22 @@ const DespesasPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Despesas</h1>
         <div className="flex gap-3">
+          <Button
+            variant={viewMode === 'cards' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setViewMode('cards')}
+            title="Visualização em Cards"
+          >
+            ⊞
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            title="Visualização em Tabela"
+          >
+            ☰
+          </Button>
           <ExportButton onExport={handleExport} />
           <Button onClick={handleNovaDespesa}>+ Nova Despesa</Button>
         </div>
@@ -179,20 +212,40 @@ const DespesasPage: React.FC = () => {
           </p>
         </div>
 
-        <DespesasTable
-          despesas={filteredDespesas}
-          onEdit={handleEditDespesa}
-          onDelete={async (despesa) => {
-            if (confirm('Deseja realmente excluir esta despesa?')) {
-              await remove(despesa.id);
+        {viewMode === 'cards' ? (
+          <DespesaCardList
+            despesas={filteredDespesas}
+            onEdit={handleEditDespesa}
+            onDelete={async (despesa) => {
+              if (confirm('Deseja realmente excluir esta despesa?')) {
+                await remove(despesa.id);
+                fetchAll();
+              }
+            }}
+            onQuitar={async (despesa) => {
+              await quitar(despesa.id);
               fetchAll();
-            }
-          }}
-          onQuitar={async (despesa) => {
-            await quitar(despesa.id);
-            fetchAll();
-          }}
-        />
+            }}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+          />
+        ) : (
+          <DespesasTable
+            despesas={filteredDespesas}
+            onEdit={handleEditDespesa}
+            onDelete={async (despesa) => {
+              if (confirm('Deseja realmente excluir esta despesa?')) {
+                await remove(despesa.id);
+                fetchAll();
+              }
+            }}
+            onQuitar={async (despesa) => {
+              await quitar(despesa.id);
+              fetchAll();
+            }}
+          />
+        )}
       </div>
 
       {/* Modal de Formulário */}
