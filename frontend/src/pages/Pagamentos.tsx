@@ -9,6 +9,7 @@ import SearchInput from '../components/common/SearchInput';
 import ExportButton from '../components/common/ExportButton';
 import Alert from '../components/common/Alert';
 import PagamentosTable from '../components/pagamentos/PagamentosTable';
+import PagamentoCardList from '../components/pagamentos/PagamentoCardList';
 import PagamentoForm from '../components/pagamentos/PagamentoForm';
 import DashboardPagamentos from '../components/pagamentos/DashboardPagamentos';
 import { useExport } from '../hooks/useExport';
@@ -29,6 +30,13 @@ const PagamentosPage: React.FC = () => {
   const [contaFilter, setContaFilter] = useState<string>('');
   const [metodoFilter, setMetodoFilter] = useState<string>('');
   const [regraFilter, setRegraFilter] = useState<string>('');
+
+  // Estado de visualização
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
+  // Estados de ordenação
+  const [sortKey, setSortKey] = useState<keyof Pagamento>('dataPagto');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Estados de modais
   const [showForm, setShowForm] = useState(false);
@@ -68,6 +76,15 @@ const PagamentosPage: React.FC = () => {
     setContaFilter('');
     setMetodoFilter('');
     setRegraFilter('');
+  };
+
+  const handleSort = (key: keyof Pagamento) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
   };
 
   const handleNovoPagamento = () => {
@@ -120,6 +137,22 @@ const PagamentosPage: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Pagamentos</h1>
         <div className="flex gap-3">
+          <Button
+            variant={viewMode === 'cards' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setViewMode('cards')}
+            title="Visualização em Cards"
+          >
+            ⊞
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+            title="Visualização em Tabela"
+          >
+            ☰
+          </Button>
           <ExportButton onExport={handleExport} />
           <Button onClick={handleNovoPagamento}>+ Novo Pagamento</Button>
         </div>
@@ -180,22 +213,44 @@ const PagamentosPage: React.FC = () => {
           </p>
         </div>
 
-        <PagamentosTable
-          pagamentos={filteredPagamentos}
-          usuarios={usuarios}
-          onEdit={handleEditPagamento}
-          onDelete={async (pagamento) => {
-            if (confirm('Deseja realmente excluir este pagamento?')) {
-              try {
-                await remove(pagamento.id);
-                toastCRUD.delete('Pagamento');
-                fetchAll();
-              } catch (error) {
-                showAPIError(error);
+        {viewMode === 'cards' ? (
+          <PagamentoCardList
+            pagamentos={filteredPagamentos}
+            usuarios={usuarios}
+            onEdit={handleEditPagamento}
+            onDelete={async (pagamento) => {
+              if (confirm('Deseja realmente excluir este pagamento?')) {
+                try {
+                  await remove(pagamento.id);
+                  toastCRUD.delete('Pagamento');
+                  fetchAll();
+                } catch (error) {
+                  showAPIError(error);
+                }
               }
-            }
-          }}
-        />
+            }}
+            sortKey={sortKey}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+          />
+        ) : (
+          <PagamentosTable
+            pagamentos={filteredPagamentos}
+            usuarios={usuarios}
+            onEdit={handleEditPagamento}
+            onDelete={async (pagamento) => {
+              if (confirm('Deseja realmente excluir este pagamento?')) {
+                try {
+                  await remove(pagamento.id);
+                  toastCRUD.delete('Pagamento');
+                  fetchAll();
+                } catch (error) {
+                  showAPIError(error);
+                }
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Modal de Formulário */}
