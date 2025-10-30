@@ -169,17 +169,17 @@ class UsuarioService {
   }
 
   /**
-   * Deleta um usuário (soft delete - muda status para INATIVO)
+   * Deleta um usuário permanentemente do banco de dados
+   * ATENÇÃO: Esta operação é irreversível e também remove:
+   * - Todos os pagamentos do usuário (cascade)
+   * - Registros de agenda (cascade)
+   * - Registros de churn (cascade)
    */
   async delete(id: string): Promise<void> {
     await this.findById(id);
 
-    await prisma.usuario.update({
+    await prisma.usuario.delete({
       where: { id },
-      data: {
-        statusFinal: StatusFinal.INATIVO,
-        ativoAtual: false,
-      },
     });
   }
 

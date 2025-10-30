@@ -126,7 +126,8 @@ class UsuarioController {
 
   /**
    * DELETE /api/usuarios/:id
-   * Deleta um usuário (soft delete)
+   * Deleta um usuário permanentemente do banco de dados
+   * ATENÇÃO: Remove também todos os dados relacionados (pagamentos, agenda, churn)
    */
   delete = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -135,7 +136,7 @@ class UsuarioController {
 
     res.status(HTTP_STATUS.OK).json({
       status: 'success',
-      message: 'Usuário desativado com sucesso',
+      message: 'Usuário excluído com sucesso',
     });
   });
 
