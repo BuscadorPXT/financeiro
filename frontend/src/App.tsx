@@ -16,6 +16,7 @@ import Churn from './pages/Churn';
 import Comissoes from './pages/Comissoes';
 import Relatorios from './pages/Relatorios';
 import AdminUsers from './pages/AdminUsers';
+import UsuariosExcluidos from './pages/UsuariosExcluidos';
 import './index.css';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
                 <Route path="/comissoes" element={<Comissoes />} />
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/admin-users" element={<AdminUsers />} />
+                <Route path="/usuarios-excluidos" element={<UsuariosExcluidos />} />
               </Route>
             </Route>
           </Routes>

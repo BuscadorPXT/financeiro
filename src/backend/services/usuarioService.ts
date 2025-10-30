@@ -174,10 +174,49 @@ class UsuarioService {
    * - Todos os pagamentos do usuário (cascade)
    * - Registros de agenda (cascade)
    * - Registros de churn (cascade)
+   *
+   * Antes de excluir, salva um registro no histórico de exclusões
    */
-  async delete(id: string): Promise<void> {
-    await this.findById(id);
+  async delete(id: string, motivoExclusao?: string, excluidoPor?: string): Promise<void> {
+    const usuario = await this.findById(id);
 
+    // Buscar estatísticas de pagamentos antes de excluir
+    const pagamentos = await prisma.pagamento.findMany({
+      where: { usuarioId: id },
+      select: {
+        valor: true,
+      },
+    });
+
+    const totalPagamentos = pagamentos.length;
+    const valorTotalPago = pagamentos.reduce((sum, p) => sum + Number(p.valor), 0);
+
+    // Salvar no histórico de exclusões
+    await prisma.usuarioExcluido.create({
+      data: {
+        usuarioIdOriginal: usuario.id,
+        emailLogin: usuario.emailLogin,
+        nomeCompleto: usuario.nomeCompleto,
+        telefone: usuario.telefone,
+        indicador: usuario.indicador,
+        statusFinal: usuario.statusFinal,
+        metodo: usuario.metodo,
+        conta: usuario.conta,
+        ciclo: usuario.ciclo,
+        totalCiclosUsuario: usuario.totalCiclosUsuario,
+        dataPagto: usuario.dataPagto,
+        dataVenc: usuario.dataVenc,
+        obs: usuario.obs,
+        excluidoPor,
+        motivoExclusao,
+        totalPagamentos,
+        valorTotalPago,
+        criadoEm: usuario.createdAt,
+        atualizadoEm: usuario.updatedAt,
+      },
+    });
+
+    // Agora deleta o usuário (cascade remove pagamentos, agenda, churn)
     await prisma.usuario.delete({
       where: { id },
     });

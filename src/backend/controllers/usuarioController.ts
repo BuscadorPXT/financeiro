@@ -128,15 +128,18 @@ class UsuarioController {
    * DELETE /api/usuarios/:id
    * Deleta um usuário permanentemente do banco de dados
    * ATENÇÃO: Remove também todos os dados relacionados (pagamentos, agenda, churn)
+   * Antes de excluir, salva no histórico de exclusões
    */
   delete = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
+    const { motivo } = req.body;
+    const excluidoPor = req.user?.id; // ID do admin que está excluindo
 
-    await usuarioService.delete(id);
+    await usuarioService.delete(id, motivo, excluidoPor);
 
     res.status(HTTP_STATUS.OK).json({
       status: 'success',
-      message: 'Usuário excluído com sucesso',
+      message: 'Usuário excluído com sucesso e registrado no histórico',
     });
   });
 

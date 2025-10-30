@@ -12,6 +12,7 @@ import {
   UserX,
   Banknote,
   BarChart3,
+  Archive,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -42,6 +43,7 @@ const menuItems: MenuItem[] = [
   { name: 'Churn', path: '/churn', icon: UserX },
   { name: 'Comissões', path: '/comissoes', icon: Banknote },
   { name: 'Relatórios', path: '/relatorios', icon: BarChart3 },
+  { name: 'Usuários Excluídos', path: '/usuarios-excluidos', icon: Archive },
   { name: 'Gerenciar Usuários', path: '/admin-users', icon: Shield, adminOnly: true },
 ];
 

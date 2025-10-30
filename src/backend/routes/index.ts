@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRoutes from './auth.routes';
 import listaRoutes from './lista.routes';
 import usuarioRoutes from './usuario.routes';
+import usuarioExcluidoRoutes from './usuarioExcluido.routes';
 import pagamentoRoutes from './pagamento.routes';
 import despesaRoutes from './despesa.routes';
 import agendaRoutes from './agenda.routes';
@@ -28,6 +29,7 @@ router.get('/', (_req, res) => {
       adminUsers: '/api/admin-users',
       listas: '/api/listas',
       usuarios: '/api/usuarios',
+      usuariosExcluidos: '/api/usuarios-excluidos',
       pagamentos: '/api/pagamentos',
       despesas: '/api/despesas',
       agenda: '/api/agenda',
@@ -51,6 +53,7 @@ router.use('/admin-users', adminUsersRoutes);
 // TODAS as outras rotas protegidas por autenticação
 router.use('/listas', authenticate, listaRoutes);
 router.use('/usuarios', authenticate, usuarioRoutes);
+router.use('/usuarios-excluidos', authenticate, usuarioExcluidoRoutes);
 router.use('/pagamentos', authenticate, pagamentoRoutes);
 router.use('/despesas', authenticate, despesaRoutes);
 router.use('/agenda', authenticate, agendaRoutes);

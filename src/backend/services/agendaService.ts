@@ -170,6 +170,7 @@ class AgendaService {
 
   /**
    * Marca como cancelado e cria registro de churn
+   * Se estiver renovado, reverte automaticamente a renovação
    */
   async marcarCancelou(
     id: string,
@@ -182,13 +183,8 @@ class AgendaService {
       throw new AppError('Este item já foi marcado como cancelado', HTTP_STATUS.BAD_REQUEST);
     }
 
-    // Se estiver renovado, remove a renovação
-    if (agenda.renovou) {
-      throw new AppError(
-        'Este item está renovado. Reverta a renovação primeiro.',
-        HTTP_STATUS.BAD_REQUEST
-      );
-    }
+    // Se estiver renovado, reverte automaticamente (permitir cancelamento)
+    // Isso é comum quando o usuário renova mas depois decide cancelar
 
     // Cria registro de churn
     const churn = await prisma.churn.create({
@@ -205,10 +201,11 @@ class AgendaService {
       data: {
         churn: true,
         ativoAtual: false,
+        statusFinal: StatusFinal.INATIVO,
       },
     });
 
-    // Marca como cancelado
+    // Marca como cancelado (e remove renovação se houver)
     const agendaAtualizada = await agendaRepository.update(id, {
       cancelou: true,
       renovou: false,

@@ -250,6 +250,42 @@ model Auditoria {
   @@map("auditoria")
 }
 
+// Model UsuarioExcluido - Histórico de exclusões
+model UsuarioExcluido {
+  id                    String         @id @default(uuid())
+  usuarioIdOriginal     String         @map("usuario_id_original")
+  emailLogin            String         @map("email_login")
+  nomeCompleto          String         @map("nome_completo")
+  telefone              String?
+  indicador             String?
+  statusFinal           StatusFinal    @map("status_final")
+  metodo                MetodoPagamento?
+  conta                 String?
+  ciclo                 Int
+  totalCiclosUsuario    Int            @map("total_ciclos_usuario")
+  dataPagto             DateTime?      @map("data_pagto")
+  dataVenc              DateTime?      @map("data_venc")
+  obs                   String?
+
+  // Dados de exclusão
+  excluidoPor           String?        @map("excluido_por") // ID do admin que excluiu
+  motivoExclusao        String?        @map("motivo_exclusao")
+  dataExclusao          DateTime       @default(now()) @map("data_exclusao")
+
+  // Dados adicionais
+  totalPagamentos       Int            @default(0) @map("total_pagamentos")
+  valorTotalPago        Decimal        @default(0) @map("valor_total_pago") @db.Decimal(10, 2)
+
+  // Timestamps originais
+  criadoEm              DateTime       @map("criado_em")
+  atualizadoEm          DateTime       @map("atualizado_em")
+
+  @@index([emailLogin])
+  @@index([dataExclusao])
+  @@index([excluidoPor])
+  @@map("usuarios_excluidos")
+}
+
 enum RoleAdmin {
   ADMIN
   USER
