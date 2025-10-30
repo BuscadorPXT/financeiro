@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/auth/PrivateRoute';
 import Layout from './components/common/Layout';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Listas from './pages/Listas';
 import Prospeccao from './pages/Prospeccao';
@@ -14,6 +15,7 @@ import Agenda from './pages/Agenda';
 import Churn from './pages/Churn';
 import Comissoes from './pages/Comissoes';
 import Relatorios from './pages/Relatorios';
+import AdminUsers from './pages/AdminUsers';
 import './index.css';
 
 function App() {
@@ -22,8 +24,9 @@ function App() {
       <Router>
         <AuthProvider>
           <Routes>
-            {/* Rota pública de login */}
+            {/* Rotas públicas */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
             {/* Rotas protegidas */}
             <Route element={<PrivateRoute />}>
@@ -38,6 +41,7 @@ function App() {
                 <Route path="/churn" element={<Churn />} />
                 <Route path="/comissoes" element={<Comissoes />} />
                 <Route path="/relatorios" element={<Relatorios />} />
+                <Route path="/admin-users" element={<AdminUsers />} />
               </Route>
             </Route>
           </Routes>

@@ -10,6 +10,7 @@ import comissaoRoutes from './comissao.routes';
 import prospeccaoRoutes from './prospeccao.routes';
 import relatorioRoutes from './relatorio.routes';
 import adminRoutes from './admin.routes';
+import adminUsersRoutes from './adminUsers.routes';
 import { authenticate } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -24,6 +25,7 @@ router.get('/', (_req, res) => {
       api: '/api',
       auth: '/api/auth',
       admin: '/api/admin',
+      adminUsers: '/api/admin-users',
       listas: '/api/listas',
       usuarios: '/api/usuarios',
       pagamentos: '/api/pagamentos',
@@ -40,8 +42,11 @@ router.get('/', (_req, res) => {
 // Rotas de autenticação (públicas)
 router.use('/auth', authRoutes);
 
-// Rotas admin (protegidas por senha custom)
+// Rotas admin (protegidas por senha custom - importação de dados)
 router.use('/admin', adminRoutes);
+
+// Rotas de gerenciamento de usuários do sistema (protegidas por auth + role admin)
+router.use('/admin-users', adminUsersRoutes);
 
 // TODAS as outras rotas protegidas por autenticação
 router.use('/listas', authenticate, listaRoutes);

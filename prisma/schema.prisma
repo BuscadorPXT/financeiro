@@ -250,15 +250,23 @@ model Auditoria {
   @@map("auditoria")
 }
 
+enum RoleAdmin {
+  ADMIN
+  USER
+}
+
 // Model Admin (usuários do sistema de autenticação)
 model Admin {
-  id          String    @id @default(uuid())
-  login       String    @unique
-  senha       String    // Hash bcrypt
+  id          String     @id @default(uuid())
+  login       String     @unique
+  senha       String     // Hash bcrypt
   nome        String
-  ativo       Boolean   @default(true)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  email       String?    @unique
+  role        RoleAdmin  @default(USER)
+  aprovado    Boolean    @default(false)
+  ativo       Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   @@map("admins")
 }

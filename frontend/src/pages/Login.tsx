@@ -102,11 +102,13 @@ const Login = () => {
           </button>
         </form>
 
-        {/* Informação de teste */}
+        {/* Link para registro */}
         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Credenciais de acesso:<br />
-            <span className="font-mono">buscadorpxt / buscador2025</span>
+          <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+            Não tem uma conta?{' '}
+            <a href="/register" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+              Registre-se aqui
+            </a>
           </p>
         </div>
       </div>

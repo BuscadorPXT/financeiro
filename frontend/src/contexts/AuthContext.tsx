@@ -7,6 +7,7 @@ import type { LoginCredentials, User } from '../services/authService';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       value={{
         user,
         isAuthenticated: !!user,
+        isAdmin: user?.role === 'ADMIN',
         isLoading,
         login,
         logout,

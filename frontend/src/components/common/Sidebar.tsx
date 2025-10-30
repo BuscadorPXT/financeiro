@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
   User as UserIcon,
+  Shield,
 } from 'lucide-react';
 import clsx from 'clsx';
 import Badge from './Badge';
@@ -27,6 +28,7 @@ interface MenuItem {
   path: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
+  adminOnly?: boolean;
 }
 
 const menuItems: MenuItem[] = [
@@ -40,12 +42,13 @@ const menuItems: MenuItem[] = [
   { name: 'Churn', path: '/churn', icon: UserX },
   { name: 'Comissões', path: '/comissoes', icon: Banknote },
   { name: 'Relatórios', path: '/relatorios', icon: BarChart3 },
+  { name: 'Gerenciar Usuários', path: '/admin-users', icon: Shield, adminOnly: true },
 ];
 
 const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -126,6 +129,11 @@ const Sidebar = () => {
       <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin">
         <ul className="space-y-1">
           {menuItems.map((item) => {
+            // Filtrar itens admin-only se não for admin
+            if (item.adminOnly && !isAdmin) {
+              return null;
+            }
+
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
 

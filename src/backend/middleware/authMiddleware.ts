@@ -10,6 +10,7 @@ declare global {
       user?: {
         id: string;
         login: string;
+        role: string;
       };
     }
   }
@@ -51,6 +52,7 @@ export const authenticate = async (
     req.user = {
       id: decoded.id,
       login: decoded.login,
+      role: decoded.role,
     };
 
     next();
@@ -78,6 +80,7 @@ export const optionalAuth = async (
       req.user = {
         id: decoded.id,
         login: decoded.login,
+        role: decoded.role,
       };
     }
 
@@ -85,5 +88,29 @@ export const optionalAuth = async (
   } catch (error) {
     // Ignora erros de autenticação, continua sem usuário
     next();
+  }
+};
+
+/**
+ * Middleware para verificar se usuário é admin
+ * Deve ser usado após o middleware authenticate
+ */
+export const requireAdmin = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new UnauthorizedError('Usuário não autenticado');
+    }
+
+    if (req.user.role !== 'ADMIN') {
+      throw new UnauthorizedError('Acesso negado. Apenas administradores podem acessar este recurso.');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
   }
 };

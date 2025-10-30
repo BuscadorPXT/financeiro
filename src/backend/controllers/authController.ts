@@ -96,6 +96,34 @@ class AuthController {
       message: 'Senha alterada com sucesso',
     });
   });
+
+  /**
+   * POST /api/auth/register
+   * Registra novo usuário (público)
+   */
+  register = catchAsync(async (req: Request, res: Response) => {
+    const { login, senha, nome, email } = req.body;
+
+    if (!login || !senha || !nome) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        status: 'error',
+        message: 'Login, senha e nome são obrigatórios',
+      });
+    }
+
+    const result = await authService.register(login, senha, nome, email);
+
+    const statusCode = result.isPrimeiroUsuario ? HTTP_STATUS.OK : HTTP_STATUS.CREATED;
+    const message = result.isPrimeiroUsuario
+      ? 'Primeiro usuário criado com sucesso como administrador'
+      : 'Cadastro realizado com sucesso. Aguarde aprovação do administrador.';
+
+    return res.status(statusCode).json({
+      status: 'success',
+      data: result,
+      message,
+    });
+  });
 }
 
 export default new AuthController();

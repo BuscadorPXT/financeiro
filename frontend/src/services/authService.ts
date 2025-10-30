@@ -11,6 +11,9 @@ export interface AuthResponse {
     id: string;
     login: string;
     nome: string;
+    email?: string;
+    role: 'ADMIN' | 'USER';
+    aprovado: boolean;
   };
 }
 
@@ -18,6 +21,9 @@ export interface User {
   id: string;
   login: string;
   nome: string;
+  email?: string;
+  role: 'ADMIN' | 'USER';
+  aprovado: boolean;
   ativo: boolean;
   createdAt: string;
 }
