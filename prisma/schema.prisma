@@ -150,6 +150,8 @@ model Despesa {
 }
 
 // Model Agenda
+// REGRA DE NEGÓCIO: Um usuário só pode ter UM item ATIVO não processado (renovou=false, cancelou=false) por vez
+// Esta regra é garantida pela lógica da aplicação (não há constraint de banco devido a limitações do Prisma)
 model Agenda {
   id              String        @id @default(uuid())
   usuarioId       String        @map("usuario_id")
@@ -167,6 +169,7 @@ model Agenda {
 
   // Índices para performance
   @@index([usuarioId, status])
+  @@index([usuarioId, status, renovou, cancelou])
   @@index([dataVenc])
   @@map("agenda")
 }

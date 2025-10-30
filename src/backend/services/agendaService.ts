@@ -63,6 +63,7 @@ class AgendaService {
 
   /**
    * Cria um novo item na agenda
+   * VALIDAÇÃO: Previne criação de múltiplos itens ATIVO não processados para o mesmo usuário
    */
   async create(data: CreateAgendaDTO): Promise<Agenda> {
     // Busca o usuário
@@ -72,6 +73,23 @@ class AgendaService {
 
     if (!usuario) {
       throw new AppError('Usuário não encontrado', HTTP_STATUS.NOT_FOUND);
+    }
+
+    // Valida se já existe item ATIVO não processado para este usuário
+    const itemExistente = await prisma.agenda.findFirst({
+      where: {
+        usuarioId: data.usuarioId,
+        status: StatusAgenda.ATIVO,
+        renovou: false,
+        cancelou: false,
+      },
+    });
+
+    if (itemExistente && data.status === StatusAgenda.ATIVO) {
+      throw new AppError(
+        'Já existe um item ATIVO não processado na agenda para este usuário. Processe o item existente antes de criar um novo.',
+        HTTP_STATUS.CONFLICT
+      );
     }
 
     const diasParaVencer = calcularDiasParaVencer(data.dataVenc);
@@ -170,12 +188,13 @@ class AgendaService {
 
   /**
    * Marca como cancelado e cria registro de churn
-   * Se estiver renovado, reverte automaticamente a renovação
+   * Se estiver renovado, reverte automaticamente a renovação E o pagamento associado
+   * IMPORTANTE: Se foi renovado, o pagamento RECORRENTE será excluído
    */
   async marcarCancelou(
     id: string,
     motivoChurn?: string
-  ): Promise<{ agenda: Agenda; churn: any }> {
+  ): Promise<{ agenda: Agenda; churn: any; pagamentoRevertido?: boolean }> {
     const agenda = await this.findById(id);
 
     // Valida se já não foi cancelado
@@ -183,38 +202,69 @@ class AgendaService {
       throw new AppError('Este item já foi marcado como cancelado', HTTP_STATUS.BAD_REQUEST);
     }
 
-    // Se estiver renovado, reverte automaticamente (permitir cancelamento)
-    // Isso é comum quando o usuário renova mas depois decide cancelar
+    let pagamentoRevertido = false;
 
-    // Cria registro de churn
-    const churn = await prisma.churn.create({
-      data: {
-        usuarioId: agenda.usuarioId,
-        dataChurn: new Date(),
-        motivo: motivoChurn || 'Cancelamento via agenda',
-      },
-    });
+    // Se estiver renovado, precisa reverter o pagamento RECORRENTE criado
+    if (agenda.renovou) {
+      // Buscar o pagamento RECORRENTE mais recente do usuário
+      // Assumimos que é o pagamento criado para esta renovação
+      const pagamentoRecorrente = await prisma.pagamento.findFirst({
+        where: {
+          usuarioId: agenda.usuarioId,
+          regraTipo: RegraTipo.RECORRENTE,
+        },
+        orderBy: {
+          dataPagto: 'desc',
+        },
+      });
 
-    // Atualiza usuário para churn
-    await prisma.usuario.update({
-      where: { id: agenda.usuarioId },
-      data: {
-        churn: true,
-        ativoAtual: false,
-        statusFinal: StatusFinal.INATIVO,
-      },
-    });
+      // Se encontrou o pagamento, deleta (o método delete agora reverte o estado do usuário)
+      if (pagamentoRecorrente) {
+        await pagamentoService.delete(pagamentoRecorrente.id);
+        pagamentoRevertido = true;
+      }
+    }
 
-    // Marca como cancelado (e remove renovação se houver)
-    const agendaAtualizada = await agendaRepository.update(id, {
-      cancelou: true,
-      renovou: false,
-      status: StatusAgenda.INATIVO,
+    // Executa em transação para garantir consistência
+    const result = await prisma.$transaction(async (tx) => {
+      // Cria registro de churn
+      const churn = await tx.churn.create({
+        data: {
+          usuarioId: agenda.usuarioId,
+          dataChurn: new Date(),
+          motivo: motivoChurn || 'Cancelamento via agenda',
+        },
+      });
+
+      // Atualiza usuário para churn
+      await tx.usuario.update({
+        where: { id: agenda.usuarioId },
+        data: {
+          churn: true,
+          ativoAtual: false,
+          statusFinal: StatusFinal.INATIVO,
+        },
+      });
+
+      // Marca como cancelado (e remove renovação se houver)
+      const agendaAtualizada = await tx.agenda.update({
+        where: { id },
+        data: {
+          cancelou: true,
+          renovou: false,
+          status: StatusAgenda.INATIVO,
+        },
+      });
+
+      return {
+        agenda: agendaAtualizada,
+        churn,
+      };
     });
 
     return {
-      agenda: agendaAtualizada,
-      churn,
+      ...result,
+      pagamentoRevertido,
     };
   }
 
@@ -329,8 +379,13 @@ class AgendaService {
   /**
    * Sincroniza a agenda com os usuários ativos
    * Adiciona usuários que estão próximos do vencimento (30 dias) e ainda não estão na agenda
+   * CORREÇÃO: Detecta e corrige duplicatas (mantém apenas o mais recente)
    */
-  async sincronizarAgenda(): Promise<{ adicionados: number; atualizados: number }> {
+  async sincronizarAgenda(): Promise<{
+    adicionados: number;
+    atualizados: number;
+    duplicatasCorrigidas: number;
+  }> {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
@@ -353,23 +408,61 @@ class AgendaService {
 
     let adicionados = 0;
     let atualizados = 0;
+    let duplicatasCorrigidas = 0;
 
     for (const usuario of usuarios) {
       if (!usuario.dataVenc) continue;
 
-      // Verificar se já existe na agenda ativo e não processado
-      const existeNaAgenda = await agendaRepository.findFirstAtivoByUsuarioId(usuario.id);
+      // Buscar TODOS os itens ATIVO não processados (para detectar duplicatas)
+      const itensAtivosNaoProcessados = await prisma.agenda.findMany({
+        where: {
+          usuarioId: usuario.id,
+          status: StatusAgenda.ATIVO,
+          renovou: false,
+          cancelou: false,
+        },
+        orderBy: {
+          createdAt: 'desc', // Mais recente primeiro
+        },
+      });
 
       const diasParaVencer = calcularDiasParaVencer(usuario.dataVenc);
 
-      if (existeNaAgenda) {
-        // Atualizar se dados mudaram
+      if (itensAtivosNaoProcessados.length > 1) {
+        // DUPLICATAS DETECTADAS - Manter apenas o mais recente
+        const [itemMaisRecente, ...itensAntigos] = itensAtivosNaoProcessados;
+
+        // Inativar itens duplicados antigos
+        for (const itemAntigo of itensAntigos) {
+          await agendaRepository.update(itemAntigo.id, {
+            status: StatusAgenda.INATIVO,
+          });
+          duplicatasCorrigidas++;
+        }
+
+        // Atualizar o item mais recente
         if (
-          existeNaAgenda.dataVenc.getTime() !== usuario.dataVenc.getTime() ||
-          existeNaAgenda.diasParaVencer !== diasParaVencer ||
-          existeNaAgenda.ciclo !== usuario.ciclo
+          itemMaisRecente.dataVenc.getTime() !== usuario.dataVenc.getTime() ||
+          itemMaisRecente.diasParaVencer !== diasParaVencer ||
+          itemMaisRecente.ciclo !== usuario.ciclo
         ) {
-          await agendaRepository.update(existeNaAgenda.id, {
+          await agendaRepository.update(itemMaisRecente.id, {
+            dataVenc: usuario.dataVenc,
+            diasParaVencer,
+            ciclo: usuario.ciclo || 0,
+          });
+          atualizados++;
+        }
+      } else if (itensAtivosNaoProcessados.length === 1) {
+        // Existe exatamente um item - atualizar se necessário
+        const itemExistente = itensAtivosNaoProcessados[0];
+
+        if (
+          itemExistente.dataVenc.getTime() !== usuario.dataVenc.getTime() ||
+          itemExistente.diasParaVencer !== diasParaVencer ||
+          itemExistente.ciclo !== usuario.ciclo
+        ) {
+          await agendaRepository.update(itemExistente.id, {
             dataVenc: usuario.dataVenc,
             diasParaVencer,
             ciclo: usuario.ciclo || 0,
@@ -377,7 +470,7 @@ class AgendaService {
           atualizados++;
         }
       } else {
-        // Adicionar à agenda
+        // Não existe item - criar novo
         await agendaRepository.create({
           usuario: {
             connect: { id: usuario.id },
@@ -391,7 +484,7 @@ class AgendaService {
       }
     }
 
-    return { adicionados, atualizados };
+    return { adicionados, atualizados, duplicatasCorrigidas };
   }
 }
 

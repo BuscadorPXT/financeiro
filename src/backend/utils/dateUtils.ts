@@ -15,6 +15,7 @@ export function calcularDataVencimento(
 /**
  * Calcula quantos dias faltam para o vencimento
  * Usa apenas a parte da data (ignora timezone) para evitar problemas de cálculo
+ * CORREÇÃO: Usa Math.floor() para garantir consistência e evitar arredondamentos incorretos
  */
 export function calcularDiasParaVencer(dataVenc: Date): number {
   // Cria data de hoje usando apenas ano, mês e dia (ignora timezone)
@@ -25,9 +26,11 @@ export function calcularDiasParaVencer(dataVenc: Date): number {
   const vencimento = new Date(dataVenc);
   const vencimentoLocal = new Date(vencimento.getFullYear(), vencimento.getMonth(), vencimento.getDate());
 
-  // Calcula diferença em dias
+  // Calcula diferença em dias usando Math.floor para garantir consistência
+  // Floor: 0.9 dias = 0 dias (mais conservador para dias restantes)
+  // Ceil seria usado para dias de atraso
   const diffTime = vencimentoLocal.getTime() - hojeLocal.getTime();
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
   return diffDays;
 }

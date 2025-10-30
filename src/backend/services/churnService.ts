@@ -131,6 +131,8 @@ class ChurnService {
 
   /**
    * Reverte um churn (reativa o usuário)
+   * VALIDAÇÃO: Verifica se usuário tem pagamento válido antes de reativar
+   * Se não tiver dataVenc futura, reativa mas mantém como INATIVO
    */
   async reverterChurn(id: string): Promise<Churn> {
     const churn = await this.findById(id);
@@ -138,6 +140,21 @@ class ChurnService {
     if (churn.revertido) {
       throw new AppError('Este churn já foi revertido', HTTP_STATUS.BAD_REQUEST);
     }
+
+    // Busca dados do usuário para validar se pode ser reativado
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: churn.usuarioId },
+    });
+
+    if (!usuario) {
+      throw new AppError('Usuário não encontrado', HTTP_STATUS.NOT_FOUND);
+    }
+
+    // Valida se usuário tem pagamento válido (dataVenc futura)
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const temPagamentoValido = Boolean(usuario.dataVenc && new Date(usuario.dataVenc) > hoje);
 
     // Marca churn como revertido e reativa usuário em transação
     const churnAtualizado = await churnRepository.transaction(async (tx) => {
@@ -148,16 +165,27 @@ class ChurnService {
       });
 
       // Reativa o usuário
+      // Se tem pagamento válido, marca como ATIVO
+      // Se não tem, marca como INATIVO (reverteu o churn mas precisa de novo pagamento)
       await tx.usuario.update({
         where: { id: churn.usuarioId },
         data: {
           churn: false,
-          ativoAtual: true,
+          ativoAtual: temPagamentoValido,
+          statusFinal: temPagamentoValido ? 'ATIVO' : 'INATIVO',
         },
       });
 
       return churnRevertido;
     });
+
+    // Log de aviso se não tem pagamento válido
+    if (!temPagamentoValido) {
+      console.warn(
+        `[CHURN] Usuário ${usuario.emailLogin} reativado mas sem pagamento válido. ` +
+        'Status definido como INATIVO. Um novo pagamento é necessário para ativação.'
+      );
+    }
 
     return churnAtualizado;
   }

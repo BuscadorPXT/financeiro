@@ -20,13 +20,11 @@ async function atualizarFlagsUsuarios() {
   console.log('[JOB] Iniciando atualização de flags dos usuários...');
 
   try {
-    // Busca todos os usuários ativos ou em atraso que têm data de vencimento
+    // Busca TODOS os usuários que têm data de vencimento
+    // CORREÇÃO: Inclui INATIVO para manter dados atualizados caso sejam reativados
     const usuarios = await prisma.usuario.findMany({
       where: {
         dataVenc: { not: null },
-        statusFinal: {
-          in: [StatusFinal.ATIVO, StatusFinal.EM_ATRASO],
-        },
       },
     });
 
@@ -145,6 +143,9 @@ async function sincronizarAgenda() {
     console.log(`[JOB] Sincronização concluída:`);
     console.log(`  - ${resultado.adicionados} usuários adicionados à agenda`);
     console.log(`  - ${resultado.atualizados} itens atualizados`);
+    if (resultado.duplicatasCorrigidas > 0) {
+      console.log(`  - ${resultado.duplicatasCorrigidas} duplicatas corrigidas`);
+    }
 
     return resultado;
   } catch (error) {

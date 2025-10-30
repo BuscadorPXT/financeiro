@@ -211,17 +211,38 @@ class PagamentoService {
       }
 
       // Se for pagamento RECORRENTE, marca item da agenda como renovado
+      // VALIDAÇÃO: Garante que existe APENAS UM item para marcar como renovado
       if (data.regraTipo === RegraTipo.RECORRENTE) {
-        await tx.agenda.updateMany({
+        // Busca itens que seriam marcados como renovados
+        const itensParaRenovar = await tx.agenda.findMany({
           where: {
             usuarioId: data.usuarioId,
             renovou: false,
             cancelou: false,
             status: 'ATIVO',
           },
-          data: {
-            renovou: true,
-          },
+        });
+
+        // Valida que existe exatamente UM item
+        if (itensParaRenovar.length === 0) {
+          throw new AppError(
+            'Nenhum item da agenda encontrado para marcar como renovado. Crie um item na agenda antes de registrar o pagamento recorrente.',
+            HTTP_STATUS.BAD_REQUEST
+          );
+        }
+
+        if (itensParaRenovar.length > 1) {
+          throw new AppError(
+            `Encontrados ${itensParaRenovar.length} itens ATIVO não processados na agenda para este usuário. ` +
+            'Existe uma duplicata que precisa ser corrigida. Execute a sincronização da agenda primeiro.',
+            HTTP_STATUS.CONFLICT
+          );
+        }
+
+        // Marca o único item como renovado
+        await tx.agenda.update({
+          where: { id: itensParaRenovar[0].id },
+          data: { renovou: true },
         });
       }
 
@@ -253,14 +274,125 @@ class PagamentoService {
   }
 
   /**
-   * Deleta um pagamento
-   * TODO: Implementar reversão de efeitos no usuário
+   * Deleta um pagamento e reverte os efeitos no usuário
+   * ATENÇÃO: Esta operação reverte o estado do usuário para o estado anterior ao pagamento
+   * - Se for PRIMEIRO: Reverte usuário para estado inicial (INATIVO, ciclo 0)
+   * - Se for RECORRENTE: Decrementa ciclo e restaura dados do pagamento anterior
+   * - Remove comissão associada (cascade)
    */
   async delete(id: string): Promise<void> {
-    await this.findById(id);
+    const pagamento = await this.findById(id);
 
-    await prisma.pagamento.delete({
-      where: { id },
+    // Executa em transação para garantir atomicidade
+    await prisma.$transaction(async (tx) => {
+      // Busca usuário
+      const usuario = await tx.usuario.findUnique({
+        where: { id: pagamento.usuarioId },
+      });
+
+      if (!usuario) {
+        throw new AppError('Usuário não encontrado', HTTP_STATUS.NOT_FOUND);
+      }
+
+      // Define atualização baseada no tipo de pagamento
+      let usuarioUpdate: any = {};
+
+      if (pagamento.regraTipo === RegraTipo.PRIMEIRO) {
+        // Reverter primeira adesão - volta para estado inicial
+        usuarioUpdate = {
+          statusFinal: StatusFinal.INATIVO,
+          entrou: false,
+          ativoAtual: false,
+          ciclo: 0,
+          totalCiclosUsuario: 0,
+          dataPagto: null,
+          mesPagto: null,
+          dataVenc: null,
+          diasParaVencer: null,
+          diasAcesso: null,
+          venceHoje: false,
+          prox7Dias: false,
+          emAtraso: false,
+          metodo: null,
+          conta: null,
+          regraTipo: null,
+          regraValor: null,
+          elegivelComissao: false,
+          comissaoValor: null,
+          mesRef: null,
+        };
+      } else if (pagamento.regraTipo === RegraTipo.RECORRENTE) {
+        // Reverter renovação - busca pagamento anterior para restaurar
+        const pagamentoAnterior = await tx.pagamento.findFirst({
+          where: {
+            usuarioId: pagamento.usuarioId,
+            dataPagto: { lt: pagamento.dataPagto },
+          },
+          orderBy: { dataPagto: 'desc' },
+        });
+
+        if (pagamentoAnterior) {
+          // Restaura dados do pagamento anterior
+          const dataVencAnterior = calcularDataVencimento(pagamentoAnterior.dataPagto, 30);
+          const diasParaVencerAnterior = calcularDiasParaVencer(dataVencAnterior);
+
+          usuarioUpdate = {
+            dataPagto: pagamentoAnterior.dataPagto,
+            mesPagto: pagamentoAnterior.mesPagto,
+            dataVenc: dataVencAnterior,
+            diasParaVencer: diasParaVencerAnterior,
+            venceHoje: venceHoje(dataVencAnterior),
+            prox7Dias: venceProximos7Dias(dataVencAnterior),
+            emAtraso: diasParaVencerAnterior < 0,
+            metodo: pagamentoAnterior.metodo,
+            conta: pagamentoAnterior.conta,
+            regraTipo: pagamentoAnterior.regraTipo,
+            regraValor: pagamentoAnterior.regraValor,
+            elegivelComissao: pagamentoAnterior.elegivelComissao,
+            comissaoValor: pagamentoAnterior.comissaoValor,
+            ciclo: Math.max(0, (usuario.ciclo || 1) - 1),
+            totalCiclosUsuario: Math.max(0, (usuario.totalCiclosUsuario || 1) - 1),
+            renovou: false,
+            statusFinal: diasParaVencerAnterior >= 1 ? StatusFinal.ATIVO : StatusFinal.EM_ATRASO,
+          };
+        } else {
+          // Se não há pagamento anterior, trata como primeira adesão sendo revertida
+          usuarioUpdate = {
+            statusFinal: StatusFinal.INATIVO,
+            entrou: false,
+            ativoAtual: false,
+            ciclo: 0,
+            totalCiclosUsuario: 0,
+            dataPagto: null,
+            mesPagto: null,
+            dataVenc: null,
+            diasParaVencer: null,
+            diasAcesso: null,
+            venceHoje: false,
+            prox7Dias: false,
+            emAtraso: false,
+            metodo: null,
+            conta: null,
+            regraTipo: null,
+            regraValor: null,
+            elegivelComissao: false,
+            comissaoValor: null,
+            mesRef: null,
+            renovou: false,
+          };
+        }
+      }
+
+      // Atualiza usuário
+      await tx.usuario.update({
+        where: { id: pagamento.usuarioId },
+        data: usuarioUpdate,
+      });
+
+      // Remove o pagamento (cascade remove comissão automaticamente)
+      await tx.pagamento.delete({
+        where: { id },
+      });
     });
   }
 
@@ -379,24 +511,11 @@ class PagamentoService {
   }
 
   /**
-   * Formata data para mês de pagamento (ex: "OUT/2024")
+   * Formata data para mês de pagamento (ex: "10/2024")
+   * CORREÇÃO: Padronizado para formato numérico MM/YYYY em todo o sistema
    */
   private formatarMesPagamento(data: Date): string {
-    const meses = [
-      'JAN',
-      'FEV',
-      'MAR',
-      'ABR',
-      'MAI',
-      'JUN',
-      'JUL',
-      'AGO',
-      'SET',
-      'OUT',
-      'NOV',
-      'DEZ',
-    ];
-    const mes = meses[data.getMonth()];
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
     const ano = data.getFullYear();
     return `${mes}/${ano}`;
   }
