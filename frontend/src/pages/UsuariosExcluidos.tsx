@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import usuarioExcluidoService, { UsuarioExcluido, UsuarioExcluidoStats } from '../services/usuarioExcluidoService';
+import usuarioExcluidoService from '../services/usuarioExcluidoService';
+import type { UsuarioExcluido, UsuarioExcluidoStats } from '../services/usuarioExcluidoService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Alert from '../components/common/Alert';
 import SearchInput from '../components/common/SearchInput';
