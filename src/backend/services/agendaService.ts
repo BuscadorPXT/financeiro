@@ -241,7 +241,6 @@ class AgendaService {
         where: { id: agenda.usuarioId },
         data: {
           churn: true,
-          ativoAtual: false,
           statusFinal: StatusFinal.INATIVO,
         },
       });
@@ -402,7 +401,6 @@ class AgendaService {
         statusFinal: {
           in: [StatusFinal.ATIVO, StatusFinal.EM_ATRASO],
         },
-        ativoAtual: true,
       },
     });
 

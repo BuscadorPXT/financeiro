@@ -182,16 +182,63 @@ Dois formatos diferentes no sistema:
 
 ---
 
+## 🔵 Sprint 2 - Correções de Inconsistências
+
+### ✅ 9. Inconsistência 2.1 - Campo ativoAtual Redundante
+
+**Arquivos:** Múltiplos (11 arquivos modificados)
+
+**Problema Original:**
+O campo `ativoAtual` (boolean) era sempre derivado de `statusFinal`:
+- `ativoAtual = (statusFinal === ATIVO)`
+- Queries redundantes: `where: { ativoAtual: true, statusFinal: ATIVO }`
+- Duplicação de lógica em múltiplos lugares
+- Aumentava complexidade e risco de inconsistências
+
+**Correção Implementada:**
+
+**1. Schema atualizado** (`prisma/schema.prisma`):
+- Removido campo `ativoAtual Boolean @default(false) @map("ativo_atual")`
+- Atualizado índice: `@@index([statusFinal])` (removido ativoAtual)
+
+**2. Refatoração completa em 11 arquivos**:
+- `src/backend/services/churnService.ts` - 2 ocorrências removidas
+- `src/backend/services/pagamentoService.ts` - 4 ocorrências removidas
+- `src/backend/services/agendaService.ts` - 2 ocorrências removidas
+- `src/backend/services/usuarioService.ts` - 1 ocorrência removida
+- `src/backend/services/autoImportService.ts` - 1 ocorrência removida
+- `src/backend/services/prospeccaoService.ts` - 1 ocorrência removida
+- `src/backend/repositories/UsuarioRepository.ts` - 1 query simplificada
+- `src/backend/dtos/UsuarioDTO.ts` - 3 interfaces atualizadas
+- `src/backend/routes/admin.routes.ts` - 1 ocorrência removida
+- `src/backend/services/__tests__/usuarioService.test.ts` - 2 testes atualizados
+- `src/backend/services/__tests__/pagamentoService.test.ts` - 1 teste atualizado
+
+**3. Migration SQL manual criada**:
+- `prisma/migrations/manual_remove_ativo_atual.sql`
+- Remove coluna `ativo_atual` da tabela
+- Atualiza índices
+
+**Mudanças de Lógica:**
+- Toda verificação de "usuário ativo" agora usa: `statusFinal === StatusFinal.ATIVO`
+- Queries simplificadas sem duplicação
+- Redução de ~20 linhas de código redundante
+
+**Impacto:** ✅ Código mais limpo e simples. Única fonte de verdade: `statusFinal`. Zero redundância.
+
+---
+
 ## 📊 Resumo Estatístico
 
 | Categoria | Quantidade |
 |-----------|------------|
-| **Bugs Críticos Corrigidos** | 4 |
-| **Bugs Alta Prioridade Corrigidos** | 2 |
-| **Bugs Média Prioridade Corrigidos** | 2 |
-| **Total de Correções** | 8 |
-| **Arquivos Modificados** | 5 |
-| **Linhas Adicionadas** | ~250 |
+| **Sprint 1 - Bugs Críticos Corrigidos** | 4 |
+| **Sprint 1 - Bugs Alta Prioridade Corrigidos** | 2 |
+| **Sprint 1 - Bugs Média Prioridade Corrigidos** | 2 |
+| **Sprint 2 - Inconsistências Corrigidas** | 1 |
+| **Total de Correções** | 9 |
+| **Arquivos Modificados** | 13 |
+| **Linhas Removidas** | ~30 |
 | **Validações Adicionadas** | 7 |
 | **Transações Implementadas** | 3 |
 
@@ -199,12 +246,22 @@ Dois formatos diferentes no sistema:
 
 ## 🔧 Arquivos Modificados
 
-1. ✅ `src/backend/services/pagamentoService.ts` - Bugs 1.1, 3.2, 1.6
-2. ✅ `src/backend/services/agendaService.ts` - Bugs 1.2, 3.1
-3. ✅ `src/backend/services/churnService.ts` - Bug 1.3
+### Sprint 1
+1. ✅ `src/backend/services/pagamentoService.ts` - Bugs 1.1, 3.2, 1.6, Inconsistência 2.1
+2. ✅ `src/backend/services/agendaService.ts` - Bugs 1.2, 3.1, Inconsistência 2.1
+3. ✅ `src/backend/services/churnService.ts` - Bug 1.3, Inconsistência 2.1
 4. ✅ `src/backend/jobs/atualizarFlags.ts` - Bug 1.5, atualização 3.1
 5. ✅ `src/backend/utils/dateUtils.ts` - Bug 1.4
-6. ✅ `prisma/schema.prisma` - Documentação e índice (3.1)
+6. ✅ `prisma/schema.prisma` - Documentação e índice (3.1), Inconsistência 2.1
+
+### Sprint 2
+7. ✅ `src/backend/services/usuarioService.ts` - Inconsistência 2.1
+8. ✅ `src/backend/services/autoImportService.ts` - Inconsistência 2.1
+9. ✅ `src/backend/services/prospeccaoService.ts` - Inconsistência 2.1
+10. ✅ `src/backend/repositories/UsuarioRepository.ts` - Inconsistência 2.1
+11. ✅ `src/backend/dtos/UsuarioDTO.ts` - Inconsistência 2.1
+12. ✅ `src/backend/routes/admin.routes.ts` - Inconsistência 2.1
+13. ✅ `src/backend/services/__tests__/*.test.ts` (2 files) - Inconsistência 2.1
 
 ---
 

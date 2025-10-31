@@ -152,7 +152,6 @@ class PagamentoService {
     if (data.regraTipo === RegraTipo.PRIMEIRO) {
       // Primeira adesão
       usuarioUpdate.entrou = true;
-      usuarioUpdate.ativoAtual = true;
       usuarioUpdate.statusFinal = StatusFinal.ATIVO;
       usuarioUpdate.ciclo = 1;
       usuarioUpdate.totalCiclosUsuario = 1;
@@ -160,7 +159,6 @@ class PagamentoService {
     } else if (data.regraTipo === RegraTipo.RECORRENTE) {
       // Renovação
       usuarioUpdate.renovou = true;
-      usuarioUpdate.ativoAtual = true;
       usuarioUpdate.statusFinal = StatusFinal.ATIVO;
       usuarioUpdate.ciclo = (usuario.ciclo || 0) + 1;
       usuarioUpdate.totalCiclosUsuario = (usuario.totalCiclosUsuario || 0) + 1;
@@ -302,7 +300,6 @@ class PagamentoService {
         usuarioUpdate = {
           statusFinal: StatusFinal.INATIVO,
           entrou: false,
-          ativoAtual: false,
           ciclo: 0,
           totalCiclosUsuario: 0,
           dataPagto: null,
@@ -360,7 +357,6 @@ class PagamentoService {
           usuarioUpdate = {
             statusFinal: StatusFinal.INATIVO,
             entrou: false,
-            ativoAtual: false,
             ciclo: 0,
             totalCiclosUsuario: 0,
             dataPagto: null,

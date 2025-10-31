@@ -156,7 +156,6 @@ class ProspeccaoService {
         totalCiclosUsuario: 0,
         entrou: false,
         renovou: false,
-        ativoAtual: false,
         churn: false,
         venceHoje: false,
         prox7Dias: false,

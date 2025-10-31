@@ -25,7 +25,6 @@ export interface UpdateUsuarioDTO {
   dataPagto?: Date;
   dataVenc?: Date;
   churn?: boolean;
-  ativoAtual?: boolean;
 }
 
 export interface UsuarioResponseDTO {
@@ -39,7 +38,6 @@ export interface UsuarioResponseDTO {
   totalCiclosUsuario: number;
   entrou: boolean;
   renovou: boolean;
-  ativoAtual: boolean;
   churn: boolean;
   dataPagto: Date | null;
   mesPagto: string | null;
@@ -67,7 +65,6 @@ export interface UsuarioListItemDTO {
   telefone: string | null;
   statusFinal: StatusFinal;
   ciclo: number;
-  ativoAtual: boolean;
   churn: boolean;
   diasParaVencer: number | null;
   dataVenc: Date | null;

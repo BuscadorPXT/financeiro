@@ -78,7 +78,6 @@ model Usuario {
   mesRef                String?        @map("mes_ref")
   entrou                Boolean        @default(false)
   renovou               Boolean        @default(false)
-  ativoAtual            Boolean        @default(false) @map("ativo_atual")
   churn                 Boolean        @default(false)
   regraTipo             RegraTipo?     @map("regra_tipo")
   regraValor            Decimal?       @map("regra_valor")
@@ -94,7 +93,7 @@ model Usuario {
   prospeccaoConvertida  Prospeccao?
 
   // Índices para performance
-  @@index([statusFinal, ativoAtual])
+  @@index([statusFinal])
   @@index([dataVenc])
   @@index([indicador])
   @@index([venceHoje, prox7Dias, emAtraso])

@@ -197,7 +197,6 @@ export class UsuarioRepository {
   async findAtivos(): Promise<Usuario[]> {
     return prisma.usuario.findMany({
       where: {
-        ativoAtual: true,
         statusFinal: StatusFinal.ATIVO,
       },
       orderBy: { nomeCompleto: 'asc' },

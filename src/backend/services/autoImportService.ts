@@ -211,7 +211,6 @@ export async function executarImportacaoAutomatica(): Promise<void> {
           statusFinal: statusFinal,
           obs: observacoes,
           totalCiclosUsuario: parseInt(usuario.total_ciclos || '0'),
-          ativoAtual: statusFinal === StatusFinal.ATIVO,
         };
 
         if (usuarioExistente) {

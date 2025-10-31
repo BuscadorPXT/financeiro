@@ -284,7 +284,6 @@ class UsuarioService {
           indicador: userData.indicador,
           obs: userData.obs,
           statusFinal: StatusFinal.INATIVO,
-          ativoAtual: false,
           entrou: false,
           renovou: false,
           churn: false,

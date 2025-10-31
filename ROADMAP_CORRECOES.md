@@ -32,7 +32,7 @@ Sprint 1 (Concluída) ✅
 └─ [✅] Lógica 3.2 - Race condition
 
 Sprint 2 (Atual) 🚧
-├─ [ ] Inconsistência 2.1 - Campo ativoAtual
+├─ [✅] Inconsistência 2.1 - Campo ativoAtual
 ├─ [ ] Inconsistência 2.2 - Status automático vs manual
 ├─ [ ] Bug 1.7 - Blacklist de tokens
 ├─ [ ] Má Prática 4.2 - Falta de testes

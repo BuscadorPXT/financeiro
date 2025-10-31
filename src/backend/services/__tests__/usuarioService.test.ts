@@ -189,7 +189,6 @@ describe('UsuarioService', () => {
       const deletedUser = {
         id: '123',
         statusFinal: StatusFinal.INATIVO,
-        ativoAtual: false,
       }
 
       ;(prisma.usuario.update as jest.Mock).mockResolvedValue(deletedUser)
@@ -200,7 +199,6 @@ describe('UsuarioService', () => {
         where: { id: '123' },
         data: {
           statusFinal: StatusFinal.INATIVO,
-          ativoAtual: false,
         },
       })
       expect(result).toEqual(deletedUser)

@@ -99,7 +99,7 @@ class ChurnService {
         where: { id: data.usuarioId },
         data: {
           churn: true,
-          ativoAtual: false,
+          statusFinal: 'INATIVO',
         },
       });
 
@@ -171,7 +171,6 @@ class ChurnService {
         where: { id: churn.usuarioId },
         data: {
           churn: false,
-          ativoAtual: temPagamentoValido,
           statusFinal: temPagamentoValido ? 'ATIVO' : 'INATIVO',
         },
       });

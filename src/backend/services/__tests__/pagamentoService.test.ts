@@ -70,7 +70,6 @@ describe('PagamentoService', () => {
         data: expect.objectContaining({
           entrou: true,
           renovou: false,
-          ativoAtual: true,
           statusFinal: StatusFinal.ATIVO,
           ciclo: 1,
           totalCiclosUsuario: 1,
