@@ -72,7 +72,7 @@ export const churnFiltersSchema = z.object({
     .string()
     .optional()
     .transform((val) => (val ? parseInt(val, 10) : 10))
-    .refine((val) => val > 0 && val <= 100, 'Limite deve estar entre 1 e 100'),
+    .refine((val) => val > 0 && val <= 50000, 'Limite deve estar entre 1 e 50000'),
   usuarioId: z.string().uuid().optional(),
   revertido: z
     .string()

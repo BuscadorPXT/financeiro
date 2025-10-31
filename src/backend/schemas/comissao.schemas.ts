@@ -73,7 +73,7 @@ export const comissaoFiltersSchema = z.object({
     .string()
     .optional()
     .transform((val) => (val ? parseInt(val, 10) : 10))
-    .refine((val) => val > 0 && val <= 100, 'Limite deve estar entre 1 e 100'),
+    .refine((val) => val > 0 && val <= 50000, 'Limite deve estar entre 1 e 50000'),
   indicador: z.string().max(50).optional(),
   regraTipo: z.nativeEnum(RegraTipo).optional(),
   mesRef: z
