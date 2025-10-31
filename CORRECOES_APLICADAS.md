@@ -228,6 +228,48 @@ O campo `ativoAtual` (boolean) era sempre derivado de `statusFinal`:
 
 ---
 
+### ✅ 10. Inconsistência 2.2 - Status Automático vs Manual
+
+**Arquivos:** `UsuarioDTO.ts`, `usuarioController.ts`, `usuarioService.ts`
+
+**Problema Original:**
+O campo `statusFinal` podia ser editado manualmente via API (`PUT /api/usuarios/:id`) mas também era atualizado automaticamente pelo job diário e pelo método `atualizarFlags()`. Isso causava:
+- Confusão sobre qual é a fonte da verdade
+- Edições manuais sendo sobrescritas pelo job
+- Risco de inconsistências nos dados
+- Falta de clareza sobre o comportamento esperado
+
+**Correção Implementada:**
+
+**1. Removido statusFinal do UpdateUsuarioDTO:**
+- Campo não está mais disponível para edição manual
+- Adicionada documentação explicando que é sempre calculado
+
+**2. Removido statusFinal do controller update:**
+- Endpoint `PUT /api/usuarios/:id` não aceita mais `statusFinal` no body
+- Adicionado comentário explicando o comportamento
+
+**3. Documentado método atualizarFlags:**
+- Comentário detalhado explicando as regras de cálculo
+- Clarificado que é o ÚNICO endpoint para atualizar status
+- Regras documentadas:
+  ```typescript
+  if (emAtraso) → EM_ATRASO
+  else if (diasParaVencer >= 1) → ATIVO
+  else → mantém status atual
+  ```
+
+**4. Comportamento Final:**
+- ✅ `PUT /api/usuarios/:id` → NÃO permite alterar status
+- ✅ `PUT /api/usuarios/:id/atualizar-flags` → RECALCULA status
+- ✅ Job diário → ATUALIZA todos automaticamente
+- ✅ Criação de pagamento → DEFINE como ATIVO
+- ✅ Churn/Cancelamento → DEFINE como INATIVO
+
+**Impacto:** ✅ Status sempre consistente e previsível. Única fonte da verdade: cálculo automático baseado em regras.
+
+---
+
 ## 📊 Resumo Estatístico
 
 | Categoria | Quantidade |
@@ -235,10 +277,11 @@ O campo `ativoAtual` (boolean) era sempre derivado de `statusFinal`:
 | **Sprint 1 - Bugs Críticos Corrigidos** | 4 |
 | **Sprint 1 - Bugs Alta Prioridade Corrigidos** | 2 |
 | **Sprint 1 - Bugs Média Prioridade Corrigidos** | 2 |
-| **Sprint 2 - Inconsistências Corrigidas** | 1 |
-| **Total de Correções** | 9 |
-| **Arquivos Modificados** | 13 |
-| **Linhas Removidas** | ~30 |
+| **Sprint 2 - Inconsistências Corrigidas** | 2 |
+| **Total de Correções** | 10 |
+| **Arquivos Modificados** | 16 |
+| **Linhas Removidas** | ~35 |
+| **Documentação Adicionada** | ~50 linhas |
 | **Validações Adicionadas** | 7 |
 | **Transações Implementadas** | 3 |
 
@@ -255,13 +298,14 @@ O campo `ativoAtual` (boolean) era sempre derivado de `statusFinal`:
 6. ✅ `prisma/schema.prisma` - Documentação e índice (3.1), Inconsistência 2.1
 
 ### Sprint 2
-7. ✅ `src/backend/services/usuarioService.ts` - Inconsistência 2.1
+7. ✅ `src/backend/services/usuarioService.ts` - Inconsistências 2.1 e 2.2
 8. ✅ `src/backend/services/autoImportService.ts` - Inconsistência 2.1
 9. ✅ `src/backend/services/prospeccaoService.ts` - Inconsistência 2.1
 10. ✅ `src/backend/repositories/UsuarioRepository.ts` - Inconsistência 2.1
-11. ✅ `src/backend/dtos/UsuarioDTO.ts` - Inconsistência 2.1
-12. ✅ `src/backend/routes/admin.routes.ts` - Inconsistência 2.1
-13. ✅ `src/backend/services/__tests__/*.test.ts` (2 files) - Inconsistência 2.1
+11. ✅ `src/backend/dtos/UsuarioDTO.ts` - Inconsistências 2.1 e 2.2
+12. ✅ `src/backend/controllers/usuarioController.ts` - Inconsistência 2.2
+13. ✅ `src/backend/routes/admin.routes.ts` - Inconsistência 2.1
+14. ✅ `src/backend/services/__tests__/*.test.ts` (2 files) - Inconsistência 2.1
 
 ---
 

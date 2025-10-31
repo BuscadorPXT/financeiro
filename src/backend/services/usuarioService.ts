@@ -138,6 +138,15 @@ class UsuarioService {
 
   /**
    * Atualiza flags de vencimento e status do usuário
+   *
+   * CÁLCULO AUTOMÁTICO DE STATUS:
+   * Este método calcula o statusFinal baseado em regras automáticas:
+   * - Se emAtraso (dataVenc passada) → EM_ATRASO
+   * - Se diasParaVencer >= 1 → ATIVO
+   * - Caso contrário → mantém status atual
+   *
+   * NOTA: O statusFinal NÃO pode ser definido manualmente.
+   * Ele é sempre calculado por este método ou pelo job diário.
    */
   async atualizarFlags(id: string): Promise<Usuario> {
     const usuario = await this.findById(id);
@@ -154,7 +163,7 @@ class UsuarioService {
       emAtraso: emAtraso(usuario.dataVenc),
     };
 
-    // Atualiza status automático
+    // Calcula status automático baseado nas regras
     let statusFinal = usuario.statusFinal;
     if (flags.emAtraso) {
       statusFinal = StatusFinal.EM_ATRASO;

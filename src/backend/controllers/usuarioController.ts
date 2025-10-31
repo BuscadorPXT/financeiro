@@ -88,17 +88,19 @@ class UsuarioController {
   /**
    * PUT /api/usuarios/:id
    * Atualiza um usuário
+   *
+   * NOTA: statusFinal não pode ser atualizado manualmente pois é calculado automaticamente.
+   * Use PUT /api/usuarios/:id/atualizar-flags para recalcular o status baseado nas regras.
    */
   update = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { nomeCompleto, telefone, indicador, obs, statusFinal } = req.body;
+    const { nomeCompleto, telefone, indicador, obs } = req.body;
 
     const usuario = await usuarioService.update(id, {
       nomeCompleto,
       telefone,
       indicador,
       obs,
-      statusFinal,
     });
 
     res.status(HTTP_STATUS.OK).json({
@@ -110,7 +112,13 @@ class UsuarioController {
 
   /**
    * PUT /api/usuarios/:id/atualizar-flags
-   * Atualiza flags de vencimento e status
+   * Atualiza flags de vencimento e status automaticamente
+   *
+   * Este é o ÚNICO endpoint que atualiza o statusFinal.
+   * O status é calculado baseado nas regras:
+   * - emAtraso (dataVenc passada) → EM_ATRASO
+   * - diasParaVencer >= 1 → ATIVO
+   * - Sem dataVenc → mantém status atual
    */
   atualizarFlags = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;

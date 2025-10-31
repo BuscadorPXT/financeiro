@@ -15,13 +15,23 @@ export interface CreateUsuarioDTO {
   statusFinal?: StatusFinal;
 }
 
+/**
+ * DTO para atualização de usuário
+ *
+ * NOTA: statusFinal não está incluso pois é calculado automaticamente.
+ * Use o endpoint PUT /api/usuarios/:id/atualizar-flags para recalcular o status.
+ *
+ * O status é calculado baseado em:
+ * - emAtraso (dataVenc passada) → EM_ATRASO
+ * - diasParaVencer >= 1 → ATIVO
+ * - Sem dataVenc → INATIVO
+ */
 export interface UpdateUsuarioDTO {
   emailLogin?: string;
   nomeCompleto?: string;
   telefone?: string;
   indicador?: string;
   ciclo?: number;
-  statusFinal?: StatusFinal;
   dataPagto?: Date;
   dataVenc?: Date;
   churn?: boolean;
