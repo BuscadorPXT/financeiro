@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import prisma from '../../database/client';
+import adminRepository from '../repositories/AdminRepository';
 import { UnauthorizedError, NotFoundError, AppError } from '../errors';
 
 // Validação obrigatória do JWT_SECRET
@@ -37,10 +37,8 @@ class AuthService {
    * Autentica usuário e retorna token
    */
   async login(login: string, senha: string) {
-    // Buscar admin
-    const admin = await prisma.admin.findUnique({
-      where: { login },
-    });
+    // Buscar admin (inclui senha para validação)
+    const admin = await adminRepository.findByLogin(login);
 
     if (!admin) {
       throw new UnauthorizedError('Login ou senha inválidos');
@@ -94,19 +92,7 @@ class AuthService {
    * Retorna dados do usuário autenticado
    */
   async getMe(userId: string) {
-    const admin = await prisma.admin.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        login: true,
-        nome: true,
-        email: true,
-        role: true,
-        aprovado: true,
-        ativo: true,
-        createdAt: true,
-      },
-    });
+    const admin = await adminRepository.findByIdSafe(userId);
 
     if (!admin) {
       throw new NotFoundError('Admin', userId);
@@ -119,9 +105,7 @@ class AuthService {
    * Altera senha do usuário
    */
   async changePassword(userId: string, senhaAtual: string, senhaNova: string) {
-    const admin = await prisma.admin.findUnique({
-      where: { id: userId },
-    });
+    const admin = await adminRepository.findById(userId);
 
     if (!admin) {
       throw new NotFoundError('Admin', userId);
@@ -138,10 +122,7 @@ class AuthService {
     const senhaHash = await bcrypt.hash(senhaNova, BCRYPT_ROUNDS);
 
     // Atualizar senha
-    await prisma.admin.update({
-      where: { id: userId },
-      data: { senha: senhaHash },
-    });
+    await adminRepository.updatePassword(userId, senhaHash);
 
     return true;
   }
@@ -151,9 +132,7 @@ class AuthService {
    */
   async register(login: string, senha: string, nome: string, email?: string) {
     // Verificar se login já existe
-    const existingLogin = await prisma.admin.findUnique({
-      where: { login },
-    });
+    const existingLogin = await adminRepository.findByLogin(login);
 
     if (existingLogin) {
       throw new AppError('Login já está em uso', 400);
@@ -161,9 +140,7 @@ class AuthService {
 
     // Verificar se email já existe (se fornecido)
     if (email) {
-      const existingEmail = await prisma.admin.findUnique({
-        where: { email },
-      });
+      const existingEmail = await adminRepository.findByEmail(email);
 
       if (existingEmail) {
         throw new AppError('Email já está em uso', 400);
@@ -171,21 +148,19 @@ class AuthService {
     }
 
     // Verificar se é o primeiro usuário (se sim, já aprova e torna admin)
-    const totalAdmins = await prisma.admin.count();
+    const totalAdmins = await adminRepository.count();
     const isPrimeiroUsuario = totalAdmins === 0;
 
     // Hash da senha com rounds recomendado pela OWASP
     const senhaHash = await bcrypt.hash(senha, BCRYPT_ROUNDS);
 
-    const admin = await prisma.admin.create({
-      data: {
-        login,
-        senha: senhaHash,
-        nome,
-        email,
-        aprovado: isPrimeiroUsuario,
-        role: isPrimeiroUsuario ? 'ADMIN' : 'USER',
-      },
+    const admin = await adminRepository.create({
+      login,
+      senha: senhaHash,
+      nome,
+      email,
+      aprovado: isPrimeiroUsuario,
+      role: isPrimeiroUsuario ? 'ADMIN' : 'USER',
     });
 
     return {
@@ -276,42 +251,14 @@ class AuthService {
    * Lista todos os usuários (apenas para admins)
    */
   async listUsuarios(filtro?: { aprovado?: boolean; ativo?: boolean }) {
-    const where: any = {};
-
-    if (filtro?.aprovado !== undefined) {
-      where.aprovado = filtro.aprovado;
-    }
-
-    if (filtro?.ativo !== undefined) {
-      where.ativo = filtro.ativo;
-    }
-
-    const usuarios = await prisma.admin.findMany({
-      where,
-      select: {
-        id: true,
-        login: true,
-        nome: true,
-        email: true,
-        role: true,
-        aprovado: true,
-        ativo: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return usuarios;
+    return adminRepository.findMany(filtro);
   }
 
   /**
    * Aprova um usuário pendente (apenas para admins)
    */
   async aprovarUsuario(userId: string) {
-    const admin = await prisma.admin.findUnique({
-      where: { id: userId },
-    });
+    const admin = await adminRepository.findByIdSafe(userId);
 
     if (!admin) {
       throw new NotFoundError('Usuário', userId);
@@ -321,29 +268,14 @@ class AuthService {
       throw new AppError('Usuário já está aprovado', 400);
     }
 
-    const updated = await prisma.admin.update({
-      where: { id: userId },
-      data: { aprovado: true },
-      select: {
-        id: true,
-        login: true,
-        nome: true,
-        email: true,
-        role: true,
-        aprovado: true,
-      },
-    });
-
-    return updated;
+    return adminRepository.update(userId, { aprovado: true });
   }
 
   /**
    * Rejeita/remove um usuário pendente (apenas para admins)
    */
   async rejeitarUsuario(userId: string) {
-    const admin = await prisma.admin.findUnique({
-      where: { id: userId },
-    });
+    const admin = await adminRepository.findByIdSafe(userId);
 
     if (!admin) {
       throw new NotFoundError('Usuário', userId);
@@ -353,9 +285,7 @@ class AuthService {
       throw new AppError('Não é possível rejeitar usuário já aprovado. Use a desativação.', 400);
     }
 
-    await prisma.admin.delete({
-      where: { id: userId },
-    });
+    await adminRepository.delete(userId);
 
     return true;
   }
@@ -364,57 +294,26 @@ class AuthService {
    * Altera role do usuário (apenas para admins)
    */
   async alterarRole(userId: string, novaRole: 'ADMIN' | 'USER') {
-    const admin = await prisma.admin.findUnique({
-      where: { id: userId },
-    });
+    const admin = await adminRepository.findByIdSafe(userId);
 
     if (!admin) {
       throw new NotFoundError('Usuário', userId);
     }
 
-    const updated = await prisma.admin.update({
-      where: { id: userId },
-      data: { role: novaRole },
-      select: {
-        id: true,
-        login: true,
-        nome: true,
-        email: true,
-        role: true,
-        aprovado: true,
-      },
-    });
-
-    return updated;
+    return adminRepository.update(userId, { role: novaRole });
   }
 
   /**
    * Ativa/desativa usuário (apenas para admins)
    */
   async toggleAtivo(userId: string) {
-    const admin = await prisma.admin.findUnique({
-      where: { id: userId },
-    });
+    const admin = await adminRepository.findByIdSafe(userId);
 
     if (!admin) {
       throw new NotFoundError('Usuário', userId);
     }
 
-    const updated = await prisma.admin.update({
-      where: { id: userId },
-      data: { ativo: !admin.ativo },
-      select: {
-        id: true,
-        login: true,
-        nome: true,
-        email: true,
-        role: true,
-        aprovado: true,
-        ativo: true,
-      },
-    });
-
-    return updated;
+    return adminRepository.update(userId, { ativo: !admin.ativo });
   }
 }
 

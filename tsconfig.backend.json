@@ -28,6 +28,7 @@
     "tests",
     "src/frontend",
     "**/*.test.ts",
-    "**/__tests__/**"
+    "**/__tests__/**",
+    "**/__mocks__/**"
   ]
 }
