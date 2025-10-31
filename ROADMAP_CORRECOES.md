@@ -34,9 +34,9 @@ Sprint 1 (Concluída) ✅
 Sprint 2 (Atual) 🚧
 ├─ [✅] Inconsistência 2.1 - Campo ativoAtual
 ├─ [✅] Inconsistência 2.2 - Status automático vs manual
+├─ [✅] Lógica 3.3 - N+1 queries
 ├─ [ ] Bug 1.7 - Blacklist de tokens
-├─ [ ] Má Prática 4.2 - Falta de testes
-└─ [ ] Lógica 3.3 - N+1 queries
+└─ [ ] Má Prática 4.2 - Falta de testes
 
 Sprint 3 (Próxima) 📋
 ├─ [ ] Inconsistência 2.4 - Repository pattern
