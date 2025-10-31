@@ -3,24 +3,7 @@ import prisma from '@database/client'
 import { StatusFinal } from '@prisma/client'
 
 // Mock Prisma
-jest.mock('@database/client', () => ({
-  default: {
-    usuario: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
-    },
-    pagamento: {
-      findMany: jest.fn(),
-    },
-    churn: {
-      findFirst: jest.fn(),
-    },
-  },
-}))
+jest.mock('@database/client')
 
 describe('UsuarioService', () => {
   beforeEach(() => {

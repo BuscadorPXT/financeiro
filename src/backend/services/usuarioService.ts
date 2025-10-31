@@ -1,7 +1,6 @@
 import prisma from '../../database/client';
 import { Usuario, StatusFinal } from '@prisma/client';
 import { NotFoundError, ConflictError, ValidationError } from '../errors';
-import { HTTP_STATUS } from '../../shared/constants';
 import { isValidEmail, formatPhone } from '../utils/validators';
 import {
   calcularDiasParaVencer,

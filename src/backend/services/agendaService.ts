@@ -323,9 +323,6 @@ class AgendaService {
     const seteDias = new Date(hoje);
     seteDias.setDate(seteDias.getDate() + 7);
 
-    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-
     const [
       totalAtivos,
       vencidos,
