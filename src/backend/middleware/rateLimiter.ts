@@ -21,7 +21,7 @@ export const globalLimiter = rateLimit({
 });
 
 /**
- * Rate limiter específico para rotas de autenticação
+ * Rate limiter específico para rotas de autenticação (login)
  *
  * Limites:
  * - 5 tentativas de login por 15 minutos por IP
@@ -40,6 +40,27 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   // Só conta tentativas falhadas (status !== 200)
   skipSuccessfulRequests: true,
+});
+
+/**
+ * Rate limiter específico para registro de novos usuários
+ *
+ * Limites:
+ * - 3 registros por 1 hora por IP
+ * - Previne criação em massa de contas (spam, bots)
+ * - Mais restritivo que login pois registro é menos frequente
+ */
+export const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3, // Máximo de 3 registros
+  message: {
+    status: 'error',
+    message:
+      'Muitas tentativas de registro. Tente novamente em 1 hora.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false, // Conta todos os registros
 });
 
 /**
