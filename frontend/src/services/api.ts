@@ -1,17 +1,28 @@
 import axios from 'axios';
 
 // Configuração da URL da API
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Remove trailing slash e garante que não tenha /api duplicado
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = rawApiUrl.replace(/\/+$/, ''); // Remove trailing slashes
 
 // Criar instância do axios
 const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: `${API_BASE_URL}/api`,
   timeout: 30000, // 30 segundos
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Log para debug (apenas em dev)
+if (import.meta.env.DEV) {
+  console.log('🔧 API Config:', {
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    API_BASE_URL,
+    baseURL: `${API_BASE_URL}/api`,
+  });
+}
 
 // Interceptor de request para adicionar token
 api.interceptors.request.use(
@@ -83,8 +94,9 @@ export const stopKeepalive = () => {
 
 const pingServer = async () => {
   try {
-    const response = await axios.get(`${API_URL}/keepalive`, {
+    const response = await axios.get(`${API_BASE_URL}/keepalive`, {
       timeout: 5000,
+      withCredentials: true,
     });
     console.log('💓 Server keepalive:', response.data.message);
   } catch (error) {
