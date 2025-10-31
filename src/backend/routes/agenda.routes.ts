@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import agendaController from '../controllers/agendaController';
-import { validate } from '../middleware/validate';
-import { createAgendaSchema, updateAgendaSchema } from '../schemas/agenda.schema';
-import { idParamSchema } from '../schemas/usuario.schema';
+import { validate, idParamSchema } from '../middleware/validationMiddleware';
+import {
+  createAgendaSchema,
+  updateAgendaSchema,
+  marcarRenouSchema,
+  marcarCancelouSchema,
+  agendaFiltersSchema,
+} from '../schemas/agenda.schemas';
 
 const router = Router();
 
@@ -13,30 +18,30 @@ router.get('/stats', agendaController.getStats);
 router.put('/atualizar-dias', agendaController.atualizarDiasParaVencer);
 
 // GET /api/agenda - Lista todos com paginação e filtros
-router.get('/', agendaController.getAll);
+router.get('/', validate({ query: agendaFiltersSchema }), agendaController.getAll);
 
 // GET /api/agenda/:id - Busca por ID
-router.get('/:id', validate(idParamSchema), agendaController.getById);
+router.get('/:id', validate({ params: idParamSchema }), agendaController.getById);
 
 // POST /api/agenda - Cria novo item
 router.post('/', validate(createAgendaSchema), agendaController.create);
 
 // PUT /api/agenda/:id - Atualiza item
-router.put('/:id', validate(updateAgendaSchema), agendaController.update);
+router.put('/:id', validate({ params: idParamSchema, body: updateAgendaSchema }), agendaController.update);
 
 // PUT /api/agenda/:id/renovou - Marca como renovado
-router.put('/:id/renovou', validate(idParamSchema), agendaController.marcarRenovou);
+router.put('/:id/renovou', validate({ params: idParamSchema, body: marcarRenouSchema }), agendaController.marcarRenovou);
 
 // PUT /api/agenda/:id/cancelou - Marca como cancelado
-router.put('/:id/cancelou', validate(idParamSchema), agendaController.marcarCancelou);
+router.put('/:id/cancelou', validate({ params: idParamSchema, body: marcarCancelouSchema }), agendaController.marcarCancelou);
 
 // PUT /api/agenda/:id/reverter-renovou - Reverte renovação
-router.put('/:id/reverter-renovou', validate(idParamSchema), agendaController.reverterRenovou);
+router.put('/:id/reverter-renovou', validate({ params: idParamSchema }), agendaController.reverterRenovou);
 
 // PUT /api/agenda/:id/reverter-cancelou - Reverte cancelamento
-router.put('/:id/reverter-cancelou', validate(idParamSchema), agendaController.reverterCancelou);
+router.put('/:id/reverter-cancelou', validate({ params: idParamSchema }), agendaController.reverterCancelou);
 
 // DELETE /api/agenda/:id - Deleta item
-router.delete('/:id', validate(idParamSchema), agendaController.delete);
+router.delete('/:id', validate({ params: idParamSchema }), agendaController.delete);
 
 export default router;

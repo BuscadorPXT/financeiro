@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import relatorioController from '../controllers/relatorioController';
 import { reportsLimiter } from '../middleware/rateLimiter';
+import { validate } from '../middleware/validationMiddleware';
+import {
+  periodoQuerySchema,
+  relatorioFinanceiroQuerySchema,
+  relatorioUsuariosQuerySchema,
+  desempenhoMensalQuerySchema,
+} from '../schemas/relatorio.schemas';
 
 const router = Router();
 
@@ -10,18 +17,18 @@ const router = Router();
 router.use(reportsLimiter);
 
 // GET /api/relatorios/dashboard - Dashboard principal
-router.get('/dashboard', relatorioController.getDashboard);
+router.get('/dashboard', validate({ query: periodoQuerySchema }), relatorioController.getDashboard);
 
 // GET /api/relatorios/financeiro - Relatório financeiro
-router.get('/financeiro', relatorioController.getRelatorioFinanceiro);
+router.get('/financeiro', validate({ query: relatorioFinanceiroQuerySchema }), relatorioController.getRelatorioFinanceiro);
 
 // GET /api/relatorios/usuarios - Relatório de usuários
-router.get('/usuarios', relatorioController.getRelatorioUsuarios);
+router.get('/usuarios', validate({ query: relatorioUsuariosQuerySchema }), relatorioController.getRelatorioUsuarios);
 
 // GET /api/relatorios/desempenho-mensal - Desempenho mensal
-router.get('/desempenho-mensal', relatorioController.getDesempenhoMensal);
+router.get('/desempenho-mensal', validate({ query: desempenhoMensalQuerySchema }), relatorioController.getDesempenhoMensal);
 
 // GET /api/relatorios/agenda - Relatório de agenda
-router.get('/agenda', relatorioController.getRelatorioAgenda);
+router.get('/agenda', validate({ query: periodoQuerySchema }), relatorioController.getRelatorioAgenda);
 
 export default router;

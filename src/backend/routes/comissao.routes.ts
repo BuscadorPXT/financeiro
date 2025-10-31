@@ -1,5 +1,12 @@
 import { Router } from 'express';
 import comissaoController from '../controllers/comissaoController';
+import { validate, idParamSchema } from '../middleware/validationMiddleware';
+import {
+  createComissaoSchema,
+  updateComissaoSchema,
+  comissaoFiltersSchema,
+  extratoIndicadorParamSchema,
+} from '../schemas/comissao.schemas';
 
 const router = Router();
 
@@ -13,21 +20,21 @@ router.get('/consolidacao/indicador', comissaoController.getConsolidacaoPorIndic
 router.get('/relatorio/mensal', comissaoController.getRelatorioMensal);
 
 // GET /api/comissoes/extrato/:indicador - Extrato por indicador
-router.get('/extrato/:indicador', comissaoController.getExtratoPorIndicador);
+router.get('/extrato/:indicador', validate({ params: extratoIndicadorParamSchema }), comissaoController.getExtratoPorIndicador);
 
 // GET /api/comissoes - Lista todas com paginação e filtros
-router.get('/', comissaoController.getAll);
+router.get('/', validate({ query: comissaoFiltersSchema }), comissaoController.getAll);
 
 // GET /api/comissoes/:id - Busca por ID
-router.get('/:id', comissaoController.getById);
+router.get('/:id', validate({ params: idParamSchema }), comissaoController.getById);
 
 // POST /api/comissoes - Cria nova comissão
-router.post('/', comissaoController.create);
+router.post('/', validate(createComissaoSchema), comissaoController.create);
 
 // PUT /api/comissoes/:id - Atualiza comissão
-router.put('/:id', comissaoController.update);
+router.put('/:id', validate({ params: idParamSchema, body: updateComissaoSchema }), comissaoController.update);
 
 // DELETE /api/comissoes/:id - Deleta comissão
-router.delete('/:id', comissaoController.delete);
+router.delete('/:id', validate({ params: idParamSchema }), comissaoController.delete);
 
 export default router;

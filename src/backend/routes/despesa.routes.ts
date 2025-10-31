@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import despesaController from '../controllers/despesaController';
-import { validate } from '../middleware/validate';
-import { createDespesaSchema, updateDespesaSchema } from '../schemas/despesa.schema';
-import { idParamSchema } from '../schemas/usuario.schema';
+import { validate, idParamSchema } from '../middleware/validationMiddleware';
+import {
+  createDespesaSchema,
+  updateDespesaSchema,
+  despesaFiltersSchema,
+} from '../schemas/despesa.schemas';
 
 const router = Router();
 
@@ -16,24 +19,24 @@ router.get('/relatorio/categoria', despesaController.getRelatorioPorCategoria);
 router.get('/relatorio/mensal', despesaController.getRelatorioMensal);
 
 // GET /api/despesas - Lista todas com paginação e filtros
-router.get('/', despesaController.getAll);
+router.get('/', validate({ query: despesaFiltersSchema }), despesaController.getAll);
 
 // GET /api/despesas/:id - Busca por ID
-router.get('/:id', validate(idParamSchema), despesaController.getById);
+router.get('/:id', validate({ params: idParamSchema }), despesaController.getById);
 
 // POST /api/despesas - Cria nova despesa
 router.post('/', validate(createDespesaSchema), despesaController.create);
 
 // PUT /api/despesas/:id - Atualiza despesa
-router.put('/:id', validate(updateDespesaSchema), despesaController.update);
+router.put('/:id', validate({ params: idParamSchema, body: updateDespesaSchema }), despesaController.update);
 
 // PUT /api/despesas/:id/pagar - Marca como paga
-router.put('/:id/pagar', validate(idParamSchema), despesaController.marcarComoPaga);
+router.put('/:id/pagar', validate({ params: idParamSchema }), despesaController.marcarComoPaga);
 
 // PUT /api/despesas/:id/pendente - Marca como pendente
-router.put('/:id/pendente', validate(idParamSchema), despesaController.marcarComoPendente);
+router.put('/:id/pendente', validate({ params: idParamSchema }), despesaController.marcarComoPendente);
 
 // DELETE /api/despesas/:id - Deleta despesa
-router.delete('/:id', validate(idParamSchema), despesaController.delete);
+router.delete('/:id', validate({ params: idParamSchema }), despesaController.delete);
 
 export default router;
