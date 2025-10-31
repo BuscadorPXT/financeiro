@@ -15,6 +15,20 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const JWT_ISSUER = 'financasbuscador';
 const JWT_AUDIENCE = 'financasbuscador-api';
 
+/**
+ * Configuração de segurança do Bcrypt
+ *
+ * OWASP recomenda 10-12 rounds para equilibrar segurança e performance.
+ * - 10 rounds: ~150ms por hash (mínimo recomendado)
+ * - 12 rounds: ~600ms por hash (recomendado para 2024+)
+ * - 14 rounds: ~2.4s por hash (muito lento para UX)
+ *
+ * Nota: Aumentar rounds não afeta senhas existentes. Apenas novas senhas
+ * (registro, troca de senha) usarão o novo valor. bcrypt.compare() funciona
+ * com qualquer número de rounds.
+ */
+const BCRYPT_ROUNDS = 12;
+
 // Blacklist de tokens revogados (em memória - migrar para Redis em produção)
 const tokenBlacklist = new Set<string>();
 
@@ -120,8 +134,8 @@ class AuthService {
       throw new UnauthorizedError('Senha atual incorreta');
     }
 
-    // Hash da nova senha (8 rounds para melhor performance)
-    const senhaHash = await bcrypt.hash(senhaNova, 8);
+    // Hash da nova senha com rounds recomendado pela OWASP
+    const senhaHash = await bcrypt.hash(senhaNova, BCRYPT_ROUNDS);
 
     // Atualizar senha
     await prisma.admin.update({
@@ -160,8 +174,8 @@ class AuthService {
     const totalAdmins = await prisma.admin.count();
     const isPrimeiroUsuario = totalAdmins === 0;
 
-    // Hash da senha (8 rounds para melhor performance)
-    const senhaHash = await bcrypt.hash(senha, 8);
+    // Hash da senha com rounds recomendado pela OWASP
+    const senhaHash = await bcrypt.hash(senha, BCRYPT_ROUNDS);
 
     const admin = await prisma.admin.create({
       data: {
@@ -194,6 +208,10 @@ class AuthService {
 
   /**
    * Logout - adiciona token à blacklist
+   *
+   * NOTA: Logout é idempotente e nunca lança erro.
+   * Se o token for inválido ou já expirado, simplesmente ignora.
+   * Isso garante que o usuário sempre consiga fazer logout, mesmo com token corrompido.
    */
   async logout(token: string): Promise<void> {
     try {
@@ -213,8 +231,9 @@ class AuthService {
         }
       }
     } catch (error) {
-      // Ignora erros de decodificação
-      throw new AppError('Erro ao fazer logout', 500);
+      // Logout é idempotente - ignora erros silenciosamente
+      console.warn('[AUTH] Erro ao processar logout, mas operação concluída:', error);
+      // Não lança erro - usuário sempre consegue fazer logout
     }
   }
 
