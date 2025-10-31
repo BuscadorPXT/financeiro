@@ -1,24 +1,19 @@
 import axios from 'axios';
 
-// Usa o proxy do Vite em desenvolvimento, URL completa em produção
-const API_BASE_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.DEV
-    ? '/api'  // Desenvolvimento: usa proxy do Vite
-    : (() => {
-        console.error('VITE_API_URL não configurada! Configure no Vercel.');
-        return '/api'; // Fallback que vai falhar, mas deixa claro o erro
-      })()
-);
+// Configuração da URL da API
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-export const api = axios.create({
-  baseURL: API_BASE_URL,
+// Criar instância do axios
+const api = axios.create({
+  baseURL: `${API_URL}/api`,
+  timeout: 30000, // 30 segundos
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 segundos - aumentado para acomodar latência de banco externo
 });
 
-// Request interceptor - adicionar token
+// Interceptor de request para adicionar token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -32,28 +27,69 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - tratar erros de autenticação
+// Interceptor de response para tratar erros
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Se receber 401, redirecionar para login
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-
     if (error.response) {
-      console.error('API Error:', error.response.data);
-    } else if (error.request) {
-      console.error('Network Error:', error.request);
-    } else {
-      console.error('Error:', error.message);
-    }
+      // Erro de resposta do servidor
+      console.error('API Error Response:', error.response.data);
 
+      // Se for 401, redirecionar para login
+      if (error.response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    } else if (error.request) {
+      // Request foi feito mas não houve resposta
+      console.error('API No Response:', error.request);
+      console.error('Possível cold start do servidor. Tentando novamente...');
+    } else {
+      // Erro na configuração do request
+      console.error('API Request Error:', error.message);
+    }
     return Promise.reject(error);
   }
 );
+
+// Função de keepalive para prevenir cold starts do Render
+let keepaliveInterval: NodeJS.Timeout | null = null;
+
+export const startKeepalive = () => {
+  // Evitar múltiplos intervals
+  if (keepaliveInterval) {
+    return;
+  }
+
+  console.log('🔥 Iniciando keepalive para prevenir cold starts...');
+
+  // Ping inicial
+  pingServer();
+
+  // Ping a cada 10 minutos (Render free tier dorme após 15 min de inatividade)
+  keepaliveInterval = setInterval(() => {
+    pingServer();
+  }, 10 * 60 * 1000); // 10 minutos
+};
+
+export const stopKeepalive = () => {
+  if (keepaliveInterval) {
+    clearInterval(keepaliveInterval);
+    keepaliveInterval = null;
+    console.log('❄️ Keepalive desativado');
+  }
+};
+
+const pingServer = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/keepalive`, {
+      timeout: 5000,
+    });
+    console.log('💓 Server keepalive:', response.data.message);
+  } catch (error) {
+    console.warn('⚠️ Keepalive falhou (servidor pode estar acordando):', error);
+  }
+};
 
 export default api;

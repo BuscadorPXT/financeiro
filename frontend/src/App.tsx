@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -17,9 +18,19 @@ import Comissoes from './pages/Comissoes';
 import Relatorios from './pages/Relatorios';
 import AdminUsers from './pages/AdminUsers';
 import UsuariosExcluidos from './pages/UsuariosExcluidos';
+import { startKeepalive, stopKeepalive } from './services/api';
 import './index.css';
 
 function App() {
+  // Iniciar keepalive para prevenir cold starts do servidor
+  useEffect(() => {
+    startKeepalive();
+
+    return () => {
+      stopKeepalive();
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <Router>
